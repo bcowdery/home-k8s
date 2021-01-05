@@ -1,0 +1,212 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: plex-claim-token
+  namespace: home-media
+  labels:
+    app: plex
+type: Opaque
+data:
+  token: ${API_TOKEN_OPAQUE}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plex-config
+  namespace: home-media
+  labels:
+    app: plex
+data:
+  TZ: "America/Edmonton"
+  ADVERTISE_IP: "http://192.168.1.202:32400/"
+  ALLOWED_NETWORKS: "192.168.1.0/24"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: home-media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plex
+  template:
+    metadata:
+      labels:
+        app: plex
+      namespace: home-media
+    spec:
+      containers:
+        - name: plex
+          image: plexinc/pms-docker
+          resources:
+            # use resources otherwise logs will eat your ephemeral-storage
+            # resulting in root `/` at 100% on nodes and pods becoming `evicted`
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+              ephemeral-storage: "2Gi"
+            limits:
+              memory: "16Gi"
+              cpu: "2"
+              ephemeral-storage: "4Gi"
+          readinessProbe:
+            httpGet:
+              path: /identity
+              port: 32400
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /identity
+              port: 32400
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          ports:
+            # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
+            - name: pms
+              containerPort: 32400
+            - name: dnla-udp
+              protocol: UDP
+              containerPort: 1900
+            - name: dnla-tcp
+              protocol: TCP
+              containerPort: 32469
+            - name: plex-ht
+              protocol: TCP
+              containerPort: 3005
+            - name: bonjour
+              protocol: TCP
+              containerPort: 5353
+            - name: plex-roku
+              protocol: TCP
+              containerPort: 8324
+            - containerPort: 32410
+              protocol: UDP
+            - containerPort: 32412
+              protocol: UDP
+            - containerPort: 32413
+              protocol: UDP
+            - containerPort: 32414
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: plex-config
+          env:
+            - name: PLEX_CLAIM
+              valueFrom:
+                secretKeyRef:
+                  name: plex-claim-token
+                  key: token
+          volumeMounts:
+            - mountPath: "/config"
+              name: plex-storage
+            - mountPath: "/transcode"
+              name: plex-transcode
+            - mountPath: "/media/video"
+              name: plex-nfs-video
+            - mountPath: "/media/music"
+              name: plex-nfs-music
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - kube1
+      volumes:
+        - name: plex-storage
+          persistentVolumeClaim:
+            claimName: plex-storage-pvc
+        - name: plex-transcode
+          emptyDir: {}
+        - name: plex-nfs-video
+          nfs:
+            path: /volume1/video/
+            server: 192.168.1.2
+        - name: plex-nfs-music
+          nfs:
+            path: /volume1/music/
+            server: 192.168.1.2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex-udp
+  namespace: home-media
+  annotations:
+    metallb.universe.tf/allow-shared-ip: plex-svc
+  labels:
+    app: plex
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.202
+  externalTrafficPolicy: Local
+  ports:
+    - name: dnla-udp
+      port: 1900
+      protocol: UDP
+      targetPort: dnla-udp
+    - name: gdm32410
+      port: 32410
+      protocol: UDP
+      targetPort: 32410
+    - name: gdm32412
+      port: 32412
+      protocol: UDP
+      targetPort: 32412
+    - name: gdm32413
+      port: 32413
+      protocol: UDP
+      targetPort: 32413
+    - name: gdm32414
+      port: 32414
+      protocol: UDP
+      targetPort: 32414
+  selector:
+    app: plex
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex-tcp
+  namespace: home-media
+  annotations:
+    metallb.universe.tf/allow-shared-ip: plex-svc
+  labels:
+    app: plex
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.202
+  externalTrafficPolicy: Local
+  ports:
+    - name: pms
+      port: 32400
+      protocol: TCP
+      targetPort: pms
+    - name: plex-ht
+      port: 3005
+      protocol: TCP
+      targetPort: plex-ht
+    - name: bonjour
+      port: 5353
+      protocol: TCP
+      targetPort: bonjour
+    - name: plex-roku
+      port: 8324
+      protocol: TCP
+      targetPort: plex-roku
+    - name: dnla-tcp
+      port: 32469
+      protocol: TCP
+      targetPort: dnla-tcp
+  selector:
+    app: plex
+  sessionAffinity: None

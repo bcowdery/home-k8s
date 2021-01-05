@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: plex-storage-pv
+  namespace: home-media
+  labels:
+    app: plex
+spec:
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /mnt/container/plex
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - kube1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-storage-pvc
+  namespace: home-media
+  labels:
+    app: plex
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: local-storage
+  volumeMode: Filesystem
+  volumeName: plex-storage-pv
