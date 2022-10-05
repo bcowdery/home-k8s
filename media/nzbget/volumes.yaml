@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: plex-storage-pv
-  namespace: home-media
+  name: nzbget-data-pv
+  namespace: media
   labels:
-    app: plex
+    app: nzbget
 spec:
   capacity:
     storage: 30Gi
@@ -14,7 +14,7 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   storageClassName: local-storage
   local:
-    path: /mnt/container/plex
+    path: /mnt/container/nzbget
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -27,10 +27,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: plex-storage-pvc
-  namespace: home-media
+  name: nzbget-data-pvc
+  namespace: media
   labels:
-    app: plex
+    app: nzbget
 spec:
   accessModes:
   - ReadWriteOnce
@@ -39,4 +39,4 @@ spec:
       storage: 30Gi
   storageClassName: local-storage
   volumeMode: Filesystem
-  volumeName: plex-storage-pv
+  volumeName: nzbget-data-pvc

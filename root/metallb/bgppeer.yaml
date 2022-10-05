@@ -1,0 +1,27 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: local-usg
+  namespace: metallb-system
+spec:
+  # USG is configured to exclude 192.168.1.201-254 from DHCP assignment
+  # addreses in this range can be allocated to services to give deployments
+  # their own local IP address on the network, instead of using bridge networking.
+  addresses:
+  - 192.168.1.201-192.168.1.254
+---
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: advertisement
+  namespace: metallb-system
+---
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: peer
+  namespace: metallb-system
+spec:
+  myASN: 64500
+  peerASN: 64501
+  peerAddress: 192.168.1.1 # USG router

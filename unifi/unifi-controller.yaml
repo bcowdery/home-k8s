@@ -1,0 +1,161 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unifi-config
+  namespace: unifi
+  labels:
+    app: unifi-controller
+data:
+  TZ: "America/Edmonton"
+  PGID: "1000"
+  GUID: "1000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unifi-controller-deployment
+  namespace: unifi
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: unifi-controller
+  template:
+    metadata:
+      labels:
+        app: unifi-controller
+      namespace: unifi
+    spec:
+      containers:
+        - name: unifi-controller
+          image: linuxserver/unifi-controller
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+              ephemeral-storage: "500Mi"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+              ephemeral-storage: "1Gi"
+          readinessProbe:
+            httpGet:
+              port: 8443
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          ports:
+            - name: web-admin
+              containerPort: 8443
+              protocol: TCP
+            - name: stun
+              containerPort: 3478
+              protocol: UDP
+            - name: ap-discovery
+              containerPort: 10001
+              protocol: UDP
+            - name: device-communication
+              containerPort: 8080
+              protocol: TCP
+            - name: l2-controller-discovery
+              containerPort: 1900
+              protocol: UDP
+            - name: guest-portal-https
+              containerPort: 8843
+              protocol: TCP
+            - name: guest-portal
+              containerPort: 8880
+              protocol: TCP
+            - name: mobile-throughput-test
+              containerPort: 6789
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: unifi-config
+          volumeMounts:
+            - mountPath: "/config"
+              name: unifi-data
+      volumes:
+        - name: unifi-data
+          persistentVolumeClaim:
+            claimName: unifi-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: unifi-data-pvc
+spec:
+  storageClassName: nfs-client
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 6Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: unifi-controller-tcp
+    namespace: unifi
+    annotations:
+        metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
+    labels:
+      app: unifi-controller
+spec:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.202
+    externalTrafficPolicy: Local
+    ports:
+      - name: web-admin
+        protocol: TCP
+        port: 8443
+        targetPort: 8443
+      - name: device-communication
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+      - name: guest-portal-https
+        protocol: TCP
+        port: 8843
+        targetPort: 8843
+      - name: guest-portal
+        protocol: TCP
+        port: 8880
+        targetPort: 8880
+      - name: mobile-throughput-test
+        protocol: TCP
+        port: 6789
+        targetPort: 6789
+    selector:
+        app: unifi-controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: unifi-controller-udp
+    namespace: unifi
+    annotations:
+        metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
+    labels:
+      app: unifi-controller
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.202
+  externalTrafficPolicy: Local
+  ports:
+    - name: stun
+      protocol: UDP
+      port: 3478
+      targetPort: 3478
+    - name: ap-discovery
+      protocol: UDP
+      port: 10001
+      targetPort: 10001
+    - name: l2-controller-discovery
+      protocol: UDP
+      port: 1900
+      targetPort: 1900
+  selector:
+    app: unifi-controller

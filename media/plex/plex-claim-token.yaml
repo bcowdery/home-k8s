@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: plex-claim-token
+  namespace: home-media
+  labels:
+    app: plex
+type: Opaque
+data:
+  token: ${API_TOKEN_OPAQUE}

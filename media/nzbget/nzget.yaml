@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nzbget-secrets
+  namespace: media
+  labels:
+    app: nzbget
+type: Opaque
+data:
+  username: "YWRtaW4="
+  password: "cm9iZXJ0amY="
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nzbget-config
+  namespace: media
+  labels:
+    app: nzbget
+data:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: "Europe/London"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nzbget
+  namespace: media
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nzbget
+  template:
+    metadata:
+      labels:
+        app: nzbget
+      namespace: media
+    spec:
+      containers:
+        - name: nzbget
+          image: linuxserver/nzbget:latest
+          readinessProbe:
+            httpGet:
+              port: 6789
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          ports:
+            - name: nzbget-http
+              containerPort: 6789
+          envFrom:
+            - configMapRef:
+                name: nzbget-config
+          env:
+            - name: NZBGET_USER
+              valueFrom:
+                secretKeyRef:
+                  name: nzbget-secrets
+                  key: username
+            - name: NZBGET_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: nzbget-secrets
+                  key: password
+          volumeMounts:
+            - name: nzbget-data
+              mountPath: "/config"
+              subPath: "config"
+            - name: nzbget-data
+              mountPath: "/downloads"
+              subPath: "downloads"
+            - name: nzbget-nfs-video
+              mountPath: "/media/video"
+            - name: nzbget-nfs-music
+              mountPath: "/media/music"
+      volumes:
+        - name: nzbget-data
+          persistentVolumeClaim:
+            claimName: nzbget-data-pvc
+        - name: nzbget-nfs-video
+          nfs:
+            path: /volume1/video/
+            server: deepthought.lan
+        - name: nzbget-nfs-music
+          nfs:
+            path: /volume1/music/
+            server: deepthought.lan
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbget-tcp
+  namespace: media
+  labels:
+    app: nzbget
+spec:
+  selector:
+    app: nzbget
+  ports:
+    - name: nzbget-http
+      port: 6789
+      protocol: TCP
+      targetPort: nzbget-http  
+  sessionAffinity: None
