@@ -7,7 +7,7 @@ metadata:
     app: plex
 data:
   TZ: "America/Edmonton"
-  ADVERTISE_IP: "http://192.168.1.210:32400/"
+  ADVERTISE_IP: "http://192.168.1.202:32400/"
   ALLOWED_NETWORKS: "192.168.1.0/24"
 ---
 apiVersion: apps/v1
@@ -53,6 +53,7 @@ spec:
           # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
           ports:
             - name: pms
+              protocol: TCP
               containerPort: 32400
             - name: dnla-udp
               protocol: UDP
@@ -153,24 +154,29 @@ metadata:
     app: plex
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.210
+  loadBalancerIP: 192.168.1.202
   externalTrafficPolicy: Local
   ports:
     - name: dnla-udp
+      protocol: UDP
       port: 1900
-      protocol: UDP
+      targetPort: dnla-udp
     - name: gdm32410
+      protocol: UDP
       port: 32410
-      protocol: UDP
+      targetPort: gdm32410
     - name: gdm32412
+      protocol: UDP
       port: 32412
-      protocol: UDP
+      targetPort: gdm32412
     - name: gdm32413
+      protocol: UDP
       port: 32413
-      protocol: UDP
+      targetPort: gdm32413
     - name: gdm32414
-      port: 32414
       protocol: UDP
+      port: 32414
+      targetPort: gdm32414
   selector:
     app: plex
 ---
@@ -185,23 +191,28 @@ metadata:
     app: plex
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.210
+  loadBalancerIP: 192.168.1.202
   externalTrafficPolicy: Local
   ports:
     - name: pms
+      protocol: TCP
       port: 32400
-      protocol: TCP
+      targetPort: pms
     - name: plex-ht
+      protocol: TCP
       port: 3005
-      protocol: TCP
+      targetPort: plex-ht
     - name: bonjour
+      protocol: TCP
       port: 5353
-      protocol: TCP
+      targetPort: bonjour
     - name: plex-roku
+      protocol: TCP
       port: 8324
-      protocol: TCP
+      targetPort: plex-roku
     - name: dnla-tcp
-      port: 32469
       protocol: TCP
+      port: 32469
+      targetPort: dnla-tcp
   selector:
     app: plex

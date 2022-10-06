@@ -11,18 +11,11 @@ Home media servers, download agents and supporting software.
 
 | Service              | Description                          | IP Address       |
 |:---------------------|:-------------------------------------|:-----------------|
-| Plex                 | Plex media server                    | `192.168.1.210`    |
-| NzbGet               | NZB download service                 | `192.168.1.211`    |
-| Sonarr               | TV Show download manager             | `192.168.1.212`    |
-| Radarr               | Movie download manager               | `192.168.1.213`    |
+| Plex                 | Plex media server                    | `192.168.1.202`    |
+| NzbGet               | NZB download service                 | `192.168.1.203`    |
+| Sonarr               | TV Show download manager             | `192.168.1.204`    |
+| Radarr               | Movie download manager               | `192.168.1.205`    |
 
-### Unifi
-
-Unifi network management and administration.
-
-| Service              | Description                          | IP Address       |
-|:---------------------|:-------------------------------------|:-----------------|
-| Unifi Controller     | Ubiquity network management          | `192.168.1.202`    |
 
 
 ## Ubiquity Security Gateway
