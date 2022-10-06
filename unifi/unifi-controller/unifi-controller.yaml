@@ -51,7 +51,7 @@ spec:
             - name: web-admin
               containerPort: 8443
               protocol: TCP
-            - name: api
+            - name: uap-inform
               containerPort: 8080
               protocol: TCP
             - name: guest-https
@@ -69,9 +69,12 @@ spec:
             - name: syslog
               containerPort: 5514
               protocol: UDP
+
             - name: discovery
               containerPort: 10001
               protocol: UDP
+
+
             - name: l2-discovery
               containerPort: 1900
               protocol: UDP
@@ -133,27 +136,21 @@ spec:
       - name: dns
         protocol: TCP
         port: 53
-        targetPort: dns
       - name: web-admin
         protocol: TCP
         port: 8443
-        targetPort: web-admin
-      - name: api
+      - name: uap-inform
         protocol: TCP
         port: 8080
-        targetPort: api
       - name: guest-https
         protocol: TCP
         port: 8843
-        targetPort: guest-https
       - name: guest-http
         protocol: TCP
         port: 8880
-        targetPort: guest-http
       - name: speed-test
         protocol: TCP
         port: 6789
-        targetPort: speed-test
     selector:
         app: unifi-controller
 ---
@@ -174,22 +171,17 @@ spec:
     - name: dns
       protocol: UDP
       port: 53
-      targetPort: dns
     - name: stun
       protocol: UDP
       port: 3478
-      targetPort: stun
     - name: syslog
       protocol: UDP
       port: 5514
-      targetPort: syslog
     - name: discovery
       protocol: UDP
       port: 10001
-      targetPort: discovery
     - name: l2-discovery
       protocol: UDP
       port: 1900
-      targetPort: l2-discovery
   selector:
     app: unifi-controller

@@ -159,23 +159,18 @@ spec:
     - name: dnla-udp
       port: 1900
       protocol: UDP
-      targetPort: dnla-udp
     - name: gdm32410
       port: 32410
       protocol: UDP
-      targetPort: gdm32410
     - name: gdm32412
       port: 32412
       protocol: UDP
-      targetPort: gdm32412
     - name: gdm32413
       port: 32413
       protocol: UDP
-      targetPort: gdm32413
     - name: gdm32414
       port: 32414
       protocol: UDP
-      targetPort: gdm32414
   selector:
     app: plex
 ---
@@ -196,22 +191,17 @@ spec:
     - name: pms
       port: 32400
       protocol: TCP
-      targetPort: pms
     - name: plex-ht
       port: 3005
       protocol: TCP
-      targetPort: plex-ht
     - name: bonjour
       port: 5353
       protocol: TCP
-      targetPort: bonjour
     - name: plex-roku
       port: 8324
       protocol: TCP
-      targetPort: plex-roku
     - name: dnla-tcp
       port: 32469
       protocol: TCP
-      targetPort: dnla-tcp
   selector:
     app: plex

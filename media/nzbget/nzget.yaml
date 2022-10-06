@@ -124,6 +124,5 @@ spec:
     - name: web-admin
       port: 6789
       protocol: TCP
-      targetPort: web-admin
   selector:
     app: nzbget
