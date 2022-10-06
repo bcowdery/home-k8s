@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # Install k3s
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | sh -s - server  \
+    --cluster-init \
+    --disable servicelb \
+    --disable traefik
+
 sudo chmod 644 /etc/rancher/k3s/k3s.yaml
 
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-export RANCHER_HOSTNAME=rancher.lan
 
 # Install Helm
 snap install helm --classic
@@ -27,9 +30,8 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 #helm install rancher rancher-latest/rancher --namespace cattle-system --set ingress.tls.source=rancher --set hostname=rancher.lan
 
 # Install MetalLB
-helm repo add metallb https://metallb.github.io/metallb
-helm install metallb metallb/metallb
-
+# TODO: Helm or manifest? Helm appeared buggy... didn't use the metallb-system namespace
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
 kubectl apply -f root/metallb/bgppeer.yaml
 
 # Unifi
