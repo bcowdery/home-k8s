@@ -50,8 +50,8 @@ spec:
                 secretKeyRef:
                   name: plex-claim-token
                   key: token
+          # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
           ports:
-            # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
             - name: pms
               containerPort: 32400
             - name: dnla-udp
@@ -69,14 +69,18 @@ spec:
             - name: plex-roku
               protocol: TCP
               containerPort: 8324
-            - containerPort: 32410
+            - name: gdm32410
               protocol: UDP
-            - containerPort: 32412
+              containerPort: 32410
+            - name: gdm32412
               protocol: UDP
-            - containerPort: 32413
+              containerPort: 32412
+            - name: gdm32413
               protocol: UDP
-            - containerPort: 32414
+              containerPort: 32413
+            - name: gdm32414
               protocol: UDP
+              containerPort: 32414
           startupProbe:
             httpGet:
               path: /identity
@@ -159,19 +163,19 @@ spec:
     - name: gdm32410
       port: 32410
       protocol: UDP
-      targetPort: 32410
+      targetPort: gdm32410
     - name: gdm32412
       port: 32412
       protocol: UDP
-      targetPort: 32412
+      targetPort: gdm32412
     - name: gdm32413
       port: 32413
       protocol: UDP
-      targetPort: 32413
+      targetPort: gdm32413
     - name: gdm32414
       port: 32414
       protocol: UDP
-      targetPort: 32414
+      targetPort: gdm32414
   selector:
     app: plex
 ---
