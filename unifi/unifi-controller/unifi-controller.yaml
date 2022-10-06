@@ -44,31 +44,37 @@ spec:
           envFrom:
             - configMapRef:
                 name: unifi-config
-          ports:
+          # https://help.ui.com/hc/en-us/articles/218506997-UniFi-Network-Required-Ports-Reference
+          ports:            
+            - name: dns
+              containerPort: 53
             - name: web-admin
               containerPort: 8443
+              protocol: TCP
+            - name: api
+              containerPort: 8080
+              protocol: TCP
+            - name: guest-https
+              containerPort: 8843
+              protocol: TCP
+            - name: guest-http
+              containerPort: 8880
+              protocol: TCP
+            - name: speed-test
+              containerPort: 6789
               protocol: TCP
             - name: stun
               containerPort: 3478
               protocol: UDP
-            - name: ap-discovery
+            - name: syslog
+              containerPort: 5514
+              protocol: UDP
+            - name: discovery
               containerPort: 10001
               protocol: UDP
-            - name: device-communication
-              containerPort: 8080
-              protocol: TCP
-            - name: l2-controller-discovery
+            - name: l2-discovery
               containerPort: 1900
               protocol: UDP
-            - name: guest-portal-https
-              containerPort: 8843
-              protocol: TCP
-            - name: guest-portal
-              containerPort: 8880
-              protocol: TCP
-            - name: mobile-test
-              containerPort: 6789
-              protocol: TCP
           startupProbe:
             httpGet:
               port: web-admin
@@ -118,26 +124,30 @@ spec:
     loadBalancerIP: 192.168.1.202
     externalTrafficPolicy: Local
     ports:
+      - name: dns
+        protocol: TCP
+        port: 53
+        targetPort: dns
       - name: web-admin
         protocol: TCP
         port: 8443
-        targetPort: 8443
-      - name: device-communication
+        targetPort: web-admin
+      - name: api
         protocol: TCP
         port: 8080
-        targetPort: 8080
-      - name: guest-portal-https
+        targetPort: api
+      - name: guest-https
         protocol: TCP
         port: 8843
-        targetPort: 8843
-      - name: guest-portal
+        targetPort: guest-https
+      - name: guest-http
         protocol: TCP
         port: 8880
-        targetPort: 8880
-      - name: mobile-test
+        targetPort: guest-http
+      - name: speed-test
         protocol: TCP
         port: 6789
-        targetPort: 6789
+        targetPort: speed-test
     selector:
         app: unifi-controller
 ---
@@ -155,17 +165,25 @@ spec:
   loadBalancerIP: 192.168.1.202
   externalTrafficPolicy: Local
   ports:
+    - name: dns
+      protocol: UDP
+      port: 53
+      targetPort: dns
     - name: stun
       protocol: UDP
       port: 3478
-      targetPort: 3478
-    - name: ap-discovery
+      targetPort: stun
+    - name: syslog
+      protocol: UDP
+      port: 5514
+      targetPort: syslog
+    - name: discovery
       protocol: UDP
       port: 10001
-      targetPort: 10001
-    - name: l2-controller-discovery
+      targetPort: discovery
+    - name: l2-discovery
       protocol: UDP
       port: 1900
-      targetPort: 1900
+      targetPort: l2-discovery
   selector:
     app: unifi-controller
