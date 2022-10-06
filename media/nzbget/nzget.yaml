@@ -86,9 +86,6 @@ spec:
               name: nzbget-data
             - mountPath: "/downloads"
               name: nzbget-downloads
-            - mountPath: "/media"
-              name: nzbget-nfs-media
-              
       volumes:
         - name: nzbget-data
           persistentVolumeClaim:
@@ -96,10 +93,6 @@ spec:
         - name: nzbget-downloads
           persistentVolumeClaim:
             claimName: media-downloads-pvc
-        - name: nzbget-nfs-media
-          nfs:
-            path: /volume1/media/
-            server: deepthought.lan
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

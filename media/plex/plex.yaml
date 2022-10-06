@@ -123,7 +123,7 @@ spec:
         - name: plex-transcode
           emptyDir:
             sizeLimit: 30Gi
-        - name: plex-nfs-media
+        - name: plex-nfs-media    # todo: Shared PVC, needed for sonaar + radaar
           nfs:
             path: /volume1/media/
             server: deepthought.lan
