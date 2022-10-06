@@ -69,12 +69,9 @@ spec:
             - name: syslog
               containerPort: 5514
               protocol: UDP
-
             - name: discovery
               containerPort: 10001
               protocol: UDP
-
-
             - name: l2-discovery
               containerPort: 1900
               protocol: UDP
@@ -124,14 +121,16 @@ kind: Service
 metadata:
     name: unifi-controller-tcp
     namespace: unifi
-    annotations:
-        metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
+    #annotations:
+    #    metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
     labels:
       app: unifi-controller
 spec:
-    type: LoadBalancer
-    loadBalancerIP: 192.168.1.202
-    externalTrafficPolicy: Local
+    type: NodePort
+    #type: LoadBalancer
+    #loadBalancerIP: 192.168.1.202
+    #externalTrafficPolicy: Local
+    #allocateLoadBalancerNodePorts: false
     ports:
       - name: dns
         protocol: TCP
@@ -139,18 +138,23 @@ spec:
       - name: web-admin
         protocol: TCP
         port: 8443
+        nodePort: 8443
       - name: uap-inform
         protocol: TCP
         port: 8080
+        nodePort: 8080
       - name: guest-https
         protocol: TCP
         port: 8843
+        nodePort: 8843
       - name: guest-http
         protocol: TCP
         port: 8880
+        nodePort: 8880
       - name: speed-test
         protocol: TCP
         port: 6789
+        notePort: 6789
     selector:
         app: unifi-controller
 ---
@@ -159,29 +163,36 @@ kind: Service
 metadata:
     name: unifi-controller-udp
     namespace: unifi
-    annotations:
-        metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
+    #annotations:
+    #    metallb.universe.tf/allow-shared-ip: "unifi-controller-svc"
     labels:
       app: unifi-controller
 spec:
-  type: LoadBalancer
-  loadBalancerIP: 192.168.1.202
-  externalTrafficPolicy: Local
+  type: NodePort
+  #type: LoadBalancer
+  #loadBalancerIP: 192.168.1.202
+  #externalTrafficPolicy: Local
+  #allocateLoadBalancerNodePorts: false
   ports:
     - name: dns
       protocol: UDP
       port: 53
+      nodePort: 53
     - name: stun
       protocol: UDP
       port: 3478
+      nodePort: 3478
     - name: syslog
       protocol: UDP
       port: 5514
+      nodePort: 5514
     - name: discovery
       protocol: UDP
       port: 10001
+      nodePort: 10001
     - name: l2-discovery
       protocol: UDP
       port: 1900
+      nodePort: 1900
   selector:
     app: unifi-controller
