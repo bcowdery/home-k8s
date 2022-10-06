@@ -78,16 +78,19 @@ spec:
           startupProbe:
             httpGet:
               port: web-admin
+              scheme: HTTPS
             failureThreshold: 30    # 10s x 30 = 5min
             periodSeconds: 10
           readinessProbe:
             httpGet:
               port: web-admin
+              scheme: HTTPS
             initialDelaySeconds: 10
             timeoutSeconds: 5
           livenessProbe:
             httpGet:
               port: web-admin
+              scheme: HTTPS
             initialDelaySeconds: 15
             timeoutSeconds: 10
           volumeMounts:
