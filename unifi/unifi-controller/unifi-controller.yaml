@@ -41,11 +41,9 @@ spec:
               memory: "4Gi"
               cpu: "2"
               ephemeral-storage: "1Gi"
-          readinessProbe:
-            httpGet:
-              port: 8443
-            initialDelaySeconds: 15
-            timeoutSeconds: 5
+          envFrom:
+            - configMapRef:
+                name: unifi-config
           ports:
             - name: web-admin
               containerPort: 8443
@@ -71,9 +69,21 @@ spec:
             - name: mobile-test
               containerPort: 6789
               protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: unifi-config
+          startupProbe:
+            httpGet:
+              port: web-admin
+            failureThreshold: 30    # 10s x 30 = 5min
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              port: web-admin
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              port: web-admin
+            initialDelaySeconds: 15
+            timeoutSeconds: 10
           volumeMounts:
             - mountPath: "/config"
               name: unifi-data
