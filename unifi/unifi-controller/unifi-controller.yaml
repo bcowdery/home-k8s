@@ -68,7 +68,7 @@ spec:
             - name: guest-portal
               containerPort: 8880
               protocol: TCP
-            - name: mobile-throughput-test
+            - name: mobile-test
               containerPort: 6789
               protocol: TCP
           envFrom:
@@ -124,7 +124,7 @@ spec:
         protocol: TCP
         port: 8880
         targetPort: 8880
-      - name: mobile-throughput-test
+      - name: mobile-test
         protocol: TCP
         port: 6789
         targetPort: 6789
