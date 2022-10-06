@@ -106,15 +106,6 @@ spec:
               name: plex-transcode
             - mountPath: "/media"
               name: plex-nfs-media
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - kube1
       volumes:
         - name: plex-data
           persistentVolumeClaim:
@@ -126,6 +117,15 @@ spec:
           nfs:
             path: /volume1/media/
             server: deepthought.lan
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - kube1
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
