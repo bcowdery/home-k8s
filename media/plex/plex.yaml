@@ -1,15 +1,4 @@
 apiVersion: v1
-kind: Secret
-metadata:
-  name: plex-secrets
-  namespace: media
-  labels:
-    app: plex
-type: Opaque
-data:
-  token: ${API_TOKEN_OPAQUE}
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: plex-config
@@ -52,18 +41,6 @@ spec:
               memory: "32Gi"
               cpu: "4"
               ephemeral-storage: "4Gi"
-          readinessProbe:
-            httpGet:
-              path: /identity
-              port: 32400
-            initialDelaySeconds: 15
-            timeoutSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /identity
-              port: 32400
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
           ports:
             # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
             - name: pms
@@ -91,6 +68,18 @@ spec:
               protocol: UDP
             - containerPort: 32414
               protocol: UDP
+          livenessProbe:
+            httpGet:
+              path: /identity
+              port: pms
+            failureThreshold: 1
+            timeoutSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /identity
+              port: pms
+            failureThreshold: 30
+            periodSeconds: 10
           envFrom:
             - configMapRef:
                 name: plex-config
@@ -98,7 +87,7 @@ spec:
             - name: PLEX_CLAIM
               valueFrom:
                 secretKeyRef:
-                  name: plex-secrets
+                  name: plex-claim-token
                   key: token
           volumeMounts:
             - mountPath: "/config"
