@@ -53,14 +53,6 @@ spec:
               memory: "16Gi"
               cpu: "2"
               ephemeral-storage: "32Gi"
-          readinessProbe:
-            httpGet:
-              port: 6789
-            initialDelaySeconds: 15
-            timeoutSeconds: 5
-          ports:
-            - name: nzbget-http
-              containerPort: 6789
           envFrom:
             - configMapRef:
                 name: nzbget-config
@@ -75,6 +67,21 @@ spec:
                 secretKeyRef:
                   name: nzbget-secrets
                   key: password
+          ports:
+            - name: nzbget-http
+              containerPort: 6789
+          readinessProbe:
+            httpGet:
+              path: /
+              port: nzbget-http
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: nzbget-http
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
           volumeMounts:
             - mountPath: "/config"
               subPath: "config"
