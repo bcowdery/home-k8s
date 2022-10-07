@@ -36,3 +36,35 @@ spec:
       storage: 100Gi
   storageClassName: local-path
   volumeName: nzbget-downloads-pv
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-nfs-pv
+  namespace: media  
+spec:
+  capacity:
+    storage: 6Ti
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  local:
+    server: deepthought.lan
+    path: /volume1/media/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-nfs-pvc
+  namespace: media  
+spec:  
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 6Ti
+  storageClassName: nfs
+  volumeName: media-nfs-pv

@@ -106,7 +106,7 @@ spec:
             - mountPath: "/transcode"
               name: plex-transcode
             - mountPath: "/media"
-              name: plex-nfs-media
+              name: plex-media
       volumes:
         - name: plex-data
           persistentVolumeClaim:
@@ -114,10 +114,9 @@ spec:
         - name: plex-transcode
           emptyDir:
             sizeLimit: 30Gi
-        - name: plex-nfs-media    # todo: Shared PVC, needed for sonaar + radaar
-          nfs:
-            path: /volume1/media/
-            server: deepthought.lan
+        - name: plex-media
+          persistentVolumeClaim:
+            claimName: media-nfs-pvc
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
