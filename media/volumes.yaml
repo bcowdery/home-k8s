@@ -55,8 +55,8 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs
-  local:
+  storageClassName: slow
+  nfs:
     server: deepthought.lan
     path: /volume1/media/
 ---
@@ -74,5 +74,5 @@ spec:
   resources:
     requests:
       storage: 6Ti
-  storageClassName: nfs
+  storageClassName: slow
   volumeName: media-nfs-pv
