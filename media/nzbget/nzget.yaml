@@ -73,13 +73,13 @@ spec:
           readinessProbe:
             tcpSocket:
               port: web-admin
-            initialDelaySeconds: 15
-            timeoutSeconds: 5
+            initialDelaySeconds: 10
+            periodSeconds: 5
           livenessProbe:
             tcpSocket:
               port: web-admin
             initialDelaySeconds: 15
-            timeoutSeconds: 10
+            periodSeconds: 5
           volumeMounts:
             - mountPath: "/config"
               name: nzbget-data

@@ -47,16 +47,20 @@ spec:
           - name: http-web
             protocol: TCP
             containerPort: 7878
-        readinessProbe:
-          httpGet:
+        readinessProbe:  
+          tcpSocket:
             port: http-web
-          initialDelaySeconds: 15
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
           timeoutSeconds: 5
         livenessProbe:
-          httpGet:
+          tcpSocket:
             port: http-web
+          failureThreshold: 3
           initialDelaySeconds: 15
-          timeoutSeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
         volumeMounts:
           - mountPath: "/config"
             name: radarr-data

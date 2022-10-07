@@ -92,13 +92,15 @@ spec:
               path: /identity
               port: pms
             initialDelaySeconds: 10
+            periodSeconds: 10
             timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /identity
               port: pms
             initialDelaySeconds: 15
-            timeoutSeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
           volumeMounts:
             - mountPath: "/config"
               name: plex-data
