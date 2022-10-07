@@ -85,14 +85,14 @@ spec:
             - mountPath: "/config"
               name: nzbget-data
             - mountPath: "/downloads"
-              name: nzbget-downloads
+              name: shared-downloads
       volumes:
         - name: nzbget-data
           persistentVolumeClaim:
             claimName: nzbget-data-pvc
-        - name: nzbget-downloads
+        - name: shared-downloads
           persistentVolumeClaim:
-            claimName: nzbget-downloads-pvc
+            claimName: shared-downloads-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

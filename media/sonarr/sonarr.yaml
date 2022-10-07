@@ -54,19 +54,19 @@ spec:
           - mountPath: "/config"
             name: sonarr-data
           - mountPath: "/downloads"
-            name: nzbget-downloads
+            name: shared-downloads
           - mountPath: "/media"
-            name: sonarr-media
+            name: shared-media
       volumes:
         - name: sonarr-data
           persistentVolumeClaim:
             claimName: sonarr-data-pvc
-        - name: nzbget-downloads
+        - name: shared-downloads
           persistentVolumeClaim:
-            claimName: nzbget-downloads-pvc
-        - name: sonarr-media
+            claimName: shared-downloads-pvc
+        - name: shared-media
           persistentVolumeClaim:
-            claimName: media-nfs-pvc
+            claimName: shared-nfs-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

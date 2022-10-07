@@ -106,7 +106,7 @@ spec:
             - mountPath: "/transcode"
               name: plex-transcode
             - mountPath: "/media"
-              name: plex-media
+              name: shared-media
       volumes:
         - name: plex-data
           persistentVolumeClaim:
@@ -114,18 +114,9 @@ spec:
         - name: plex-transcode
           emptyDir:
             sizeLimit: 30Gi
-        - name: plex-media
+        - name: shared-media
           persistentVolumeClaim:
-            claimName: media-nfs-pvc
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - kube1
+            claimName: shared-media-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
