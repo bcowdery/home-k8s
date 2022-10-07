@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nzbget-config
+  name: sonarr-config
   namespace: media
   labels:
-    app: nzbget
+    app: sonarr
 data:
   PUID: "1000"
   PGID: "1000"
@@ -36,6 +36,9 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
+        envFrom:
+          - configMapRef:
+              name: nzbget-config
         ports:
           - name: http-web
             protocol: TCP

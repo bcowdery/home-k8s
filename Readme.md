@@ -41,9 +41,9 @@ Home media servers, download agents and supporting software.
 
 | Service              | Description                          | IP Address       |
 |:---------------------|:-------------------------------------|:-----------------|
-| Plex                 | Plex media server                    | `192.168.1.202`    |
-| NzbGet               | NZB download service                 | `192.168.1.203`    |
-| Sonarr               | TV Show download manager             | `192.168.1.204`    |
+| Plex                 | Plex media server                    | http://192.168.1.202:32400/web    |
+| NzbGet               | NZB download service                 | http://192.168.1.203:6789    |
+| Sonarr               | TV Show download manager             | http://192.168.1.204:8989    |
 | Radarr               | Movie download manager               | `192.168.1.205`    |
 
 
