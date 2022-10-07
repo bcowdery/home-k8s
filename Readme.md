@@ -39,19 +39,40 @@ sudo mkdir -p /opt/downloads
 
 Home media servers, download agents and supporting software.
 
-| Service              | Description                          | IP Address       |
-|:---------------------|:-------------------------------------|:-----------------|
-| Plex                 | Plex media server                    | http://192.168.1.202:32400/web    |
-| NzbGet               | NZB download service                 | http://192.168.1.203:6789    |
-| Sonarr               | TV Show download manager             | http://192.168.1.204:8989    |
-| Radarr               | Movie download manager               | `192.168.1.205`    |
+| Service              | Description                         |Service               | Address                         |
+|:---------------------|:------------------------------------|:---------------------|:--------------------------------|
+| Plex                 | Plex media server                   | `plex-tcp,plex-udp`    | http://192.168.1.202:32400/web  |
+| NzbGet               | NZB download service                | `nzbget-tcp`           | http://192.168.1.203:6789       |
+| Sonarr               | TV Show download manager            | `sonarr-tcp`           | http://192.168.1.204:8989       |
+| Radarr               | Movie download manager              | `radarr-tcp`           | http://192.168.1.205:7878       |
 
-
+> 🔀 Internal DNS for media services `<service_name>.media.svc.cluster.local`
 
 ## Ubiquity Security Gateway
 
 ### Enable BGP
 
+USG gateway connfig to enable BBP
+
+**data/sites/default/config.gateway.json**
+```json
+{
+	"protocols": {
+        "bgp": {
+            "64501": {
+                "neighbor": {
+                    "192.168.1.4": {
+                        "remote-as": "64500"
+                    }
+                },
+                "parameters": {
+                    "router-id": "192.168.1.1"
+                }
+            }
+        }
+    }
+}
+```
 
 # Removing
 
