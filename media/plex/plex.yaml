@@ -115,8 +115,9 @@ spec:
           emptyDir:
             sizeLimit: 30Gi
         - name: shared-media
-          persistentVolumeClaim:
-            claimName: shared-media-pvc
+          nfs:
+            server: deepthought.lan
+            path: /volume1/media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

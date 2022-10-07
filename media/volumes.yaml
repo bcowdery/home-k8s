@@ -40,39 +40,3 @@ spec:
       storage: 100Gi
   storageClassName: local-path
   volumeName: shared-downloads-pv
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: shared-media-pv
-  namespace: media
-  labels:
-    app: all
-spec:
-  capacity:
-    storage: 6Ti
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: slow
-  nfs:
-    server: deepthought.lan
-    path: /volume1/media/
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: shared-media-pvc
-  namespace: media
-  labels:
-    app: all
-spec:  
-  accessModes:
-    - ReadWriteMany
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 6Ti
-  storageClassName: slow
-  volumeName: media-nfs-pv

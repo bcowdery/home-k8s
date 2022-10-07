@@ -65,8 +65,9 @@ spec:
           persistentVolumeClaim:
             claimName: shared-downloads-pvc
         - name: shared-media
-          persistentVolumeClaim:
-            claimName: shared-nfs-pvc
+          nfs:
+            server: deepthought.lan
+            path: /volume1/media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
