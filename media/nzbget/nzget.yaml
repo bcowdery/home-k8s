@@ -67,17 +67,17 @@ spec:
                   name: nzbget-passwd
                   key: password
           ports:
-            - name: web-admin
+            - name: http-web
               protocol: TCP
               containerPort: 6789
           readinessProbe:
             tcpSocket:
-              port: web-admin
+              port: http-web
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
             tcpSocket:
-              port: web-admin
+              port: http-web
             initialDelaySeconds: 15
             periodSeconds: 5
           volumeMounts:
@@ -120,9 +120,13 @@ spec:
   loadBalancerIP: 192.168.1.203
   externalTrafficPolicy: Local
   ports:
-    - name: web-admin
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http-web
+    - name: http-web
       protocol: TCP
       port: 6789
-      targetPort: web-admin
+      targetPort: http-web
   selector:
     app: nzbget

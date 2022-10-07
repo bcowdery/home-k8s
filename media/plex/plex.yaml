@@ -186,6 +186,10 @@ spec:
   loadBalancerIP: 192.168.1.202
   externalTrafficPolicy: Local
   ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: pms
     - name: pms
       protocol: TCP
       port: 32400
