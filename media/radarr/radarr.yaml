@@ -52,7 +52,7 @@ spec:
             name: radarr-data
           - mountPath: "/downloads"
             name: shared-downloads
-          - mountPath: "/media"
+          - mountPath: "/movies"
             name: shared-media
       volumes:
         - name: radarr-data
@@ -64,7 +64,7 @@ spec:
         - name: shared-media
           nfs:
             server: deepthought.lan
-            path: /volume1/media
+            path: /volume1/media/movies
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
