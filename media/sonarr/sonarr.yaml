@@ -52,8 +52,6 @@ spec:
             name: sonarr-data
           - mountPath: "/downloads"
             name: shared-downloads
-          - mountPath: "/media"
-            name: shared-media
           - mountPath: "/tv"
             name: shared-tv
       volumes:
@@ -63,10 +61,6 @@ spec:
         - name: shared-downloads
           persistentVolumeClaim:
             claimName: shared-downloads-pvc
-        - name: shared-media
-          nfs:
-            server: deepthought.lan
-            path: /volume1/media
         - name: shared-tv
           nfs:
             server: deepthought.lan
