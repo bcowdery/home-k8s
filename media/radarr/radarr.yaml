@@ -53,7 +53,7 @@ spec:
           - mountPath: "/downloads"
             name: shared-downloads
           - mountPath: "/movies"
-            name: shared-media
+            name: shared-movies
       volumes:
         - name: radarr-data
           persistentVolumeClaim:
@@ -61,7 +61,7 @@ spec:
         - name: shared-downloads
           persistentVolumeClaim:
             claimName: shared-downloads-pvc
-        - name: shared-media
+        - name: shared-movies
           nfs:
             server: deepthought.lan
             path: /volume1/media/movies
