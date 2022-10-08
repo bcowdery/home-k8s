@@ -46,11 +46,11 @@ spec:
           image: linuxserver/nzbget:latest
           resources:
             requests:
-              memory: 4Gi
+              memory: 2Gi
               cpu: 500m
             limits:
               memory: 4Gi
-              cpu: 2000m
+              cpu: 1000m
               ephemeral-storage: 4Gi
           envFrom:
             - configMapRef:

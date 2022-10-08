@@ -34,7 +34,7 @@ spec:
           image: plexinc/pms-docker:latest
           resources:
             requests:
-              memory: 8Gi
+              memory: 16Gi
               cpu: 2
             limits:
               memory: 32Gi
