@@ -50,21 +50,15 @@ spec:
         volumeMounts:
           - mountPath: "/config"
             name: radarr-data
-          - mountPath: "/downloads"
-            name: shared-downloads
-          - mountPath: "/movies"
-            name: shared-movies
+          - mountPath: "/mnt/media"
+            name: shared-media
       volumes:
         - name: radarr-data
           persistentVolumeClaim:
             claimName: radarr-data-pvc
-        - name: shared-downloads
+        - name: shared-media
           persistentVolumeClaim:
-            claimName: shared-downloads-pvc
-        - name: shared-movies
-          nfs:
-            server: deepthought.lan
-            path: /volume1/media/movies
+            claimName: shared-media-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
