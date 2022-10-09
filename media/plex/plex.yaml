@@ -106,7 +106,7 @@ spec:
               name: plex-data
             - mountPath: "/transcode"
               name: plex-transcode
-            - mountPath: "/media"
+            - mountPath: "/mnt/media"
               name: shared-media
       volumes:
         - name: plex-data
@@ -116,9 +116,8 @@ spec:
           emptyDir:
             sizeLimit: 30Gi
         - name: shared-media
-          nfs:
-            server: deepthought.lan
-            path: /volume1/media
+          persistentVolumeClaim:
+            claimName: shared-media-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

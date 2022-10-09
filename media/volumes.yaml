@@ -1,42 +1,37 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: shared-downloads-pv
+  name: shared-media-pv
   namespace: media
   labels:
     app: all
 spec:
   capacity:
-    storage: 100Gi
+    storage: 6Ti
   volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-path
-  local:
-    path: /opt/downloads
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - kube1
+  storageClassName: nfs
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /volume1/media/
+    server: 192.168.1.2
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: shared-downloads-pvc
+  name: shared-media-pvc
   namespace: media
   labels:
     app: all
-spec:  
-  accessModes:
-    - ReadWriteMany
-  volumeMode: Filesystem
+spec:
   resources:
     requests:
-      storage: 100Gi
-  storageClassName: local-path
-  volumeName: shared-downloads-pv
+      storage: 6Ti
+  storageClassName: nfs
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany

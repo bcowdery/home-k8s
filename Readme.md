@@ -4,21 +4,27 @@ Home Kubernetes
 
 # Getting Started
 
-Install k8s & Helm
+```shell
+sudo apt install nfs-common
+sudo apt install iptables-persistent
+
+sudo iptables -P FORWARD ACCEPT
+sudo ufw default allow routed
+
+sudo snap install microk8s
+sudo snap install kubectl --classic
+sudo snap install helm --classic
+```
+
+# Configuration
 
 ```shell
-# install k8s
-curl -sfL https://get.k3s.io | sh -s - server  \
-    --cluster-init \
-    --disable servicelb \
-    --disable traefik
+mkdir ~/.kube
 
-sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+sudo usermod -a -G microk8s brian
+sudo chown -f -R brian ~/.kube
 
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-
-# install helm
-snap install help --classic
+kubectl config > ~/.kube/config
 
 # install nfs provisioner
 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
@@ -28,11 +34,7 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 
 # install metallb
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
-
-# node dirs
-sudo mkdir -p /opt/downloads
 ```
-
 
 ## Namespaces
 ### Media

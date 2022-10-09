@@ -93,7 +93,7 @@ spec:
             claimName: nzbget-data-pvc
         - name: nzbget-intermediate
           emptyDir:
-            sizeLimit: 40Gi      
+            sizeLimit: 40Gi
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc
