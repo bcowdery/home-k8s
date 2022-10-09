@@ -83,15 +83,20 @@ spec:
           volumeMounts:
             - mountPath: "/config"
               name: nzbget-data
-            - mountPath: "/downloads"
-              name: shared-downloads
+            - mountPath: "/intermediate"
+              name: nzbget-intermediate
+            - mountPath: "/mnt/media"
+              name: shared-media
       volumes:
         - name: nzbget-data
           persistentVolumeClaim:
             claimName: nzbget-data-pvc
-        - name: shared-downloads
+        - name: nzbget-intermediate
+          emptyDir:
+            sizeLimit: 40Gi      
+        - name: shared-media
           persistentVolumeClaim:
-            claimName: shared-downloads-pvc
+            claimName: shared-media-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
