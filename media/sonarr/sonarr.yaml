@@ -29,7 +29,7 @@ spec:
         app: sonarr
       namespace: media
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Always
       containers:
       - name: sonarr
         image: linuxserver/sonarr:latest
