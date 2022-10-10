@@ -32,6 +32,7 @@ spec:
       containers:
       - name: sonarr
         image: linuxserver/sonarr:latest
+        restartPolicy: OnFailure
         resources:
           requests:
             memory: 2Gi

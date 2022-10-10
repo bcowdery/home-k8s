@@ -32,6 +32,7 @@ spec:
       containers:
         - name: plex
           image: plexinc/pms-docker:latest
+          restartPolicy: OnFailure
           resources:
             requests:
               memory: 16Gi

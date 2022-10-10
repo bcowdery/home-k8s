@@ -44,6 +44,7 @@ spec:
       containers:
         - name: nzbget
           image: linuxserver/nzbget:latest
+          restartPolicy: OnFailure
           resources:
             requests:
               memory: 1Gi
