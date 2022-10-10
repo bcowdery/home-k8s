@@ -29,10 +29,10 @@ spec:
         app: plex
       namespace: media
     spec:
+      restartPolicy: Always
       containers:
         - name: plex
           image: plexinc/pms-docker:latest
-          restartPolicy: OnFailure
           resources:
             requests:
               memory: 16Gi

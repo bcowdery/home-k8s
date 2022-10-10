@@ -41,10 +41,10 @@ spec:
         app: nzbget
       namespace: media
     spec:
+      restartPolicy: Always
       containers:
         - name: nzbget
           image: linuxserver/nzbget:latest
-          restartPolicy: OnFailure
           resources:
             requests:
               memory: 1Gi

@@ -29,10 +29,10 @@ spec:
         app: radarr
       namespace: media
     spec:
+      restartPolicy: Always
       containers:
       - name: radarr
         image: linuxserver/radarr:latest
-        restartPolicy: OnFailure
         resources:
           requests:
             memory: 2Gi
