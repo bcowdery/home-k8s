@@ -35,11 +35,10 @@ spec:
         resources:
           requests:
             memory: 2Gi
-            cpu: 500m
+            cpu: 200m
           limits:
             memory: 4Gi
-            cpu: 1500m
-            ephemeral-storage: 4Gi
+            cpu: 500m
         envFrom:
           - configMapRef:
               name: sonarr-config

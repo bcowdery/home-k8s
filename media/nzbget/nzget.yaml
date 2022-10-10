@@ -46,12 +46,12 @@ spec:
           image: linuxserver/nzbget:latest
           resources:
             requests:
-              memory: 2Gi
+              memory: 1Gi
               cpu: 500m
             limits:
-              memory: 4Gi
+              memory: 2Gi
               cpu: 1000m
-              ephemeral-storage: 4Gi
+              ephemeral-storage: 2Gi
           envFrom:
             - configMapRef:
                 name: nzbget-config
@@ -92,8 +92,8 @@ spec:
           persistentVolumeClaim:
             claimName: nzbget-data-pvc
         - name: nzbget-intermediate
-          emptyDir:
-            sizeLimit: 40Gi
+          emptyDir:                       # size of files being downloaded + failed downloads
+            sizeLimit: 80Gi               # assume bluray remux ~50Gi
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc

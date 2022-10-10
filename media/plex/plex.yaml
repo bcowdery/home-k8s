@@ -39,7 +39,7 @@ spec:
             limits:
               memory: 32Gi
               cpu: 6
-              ephemeral-storage: 20Gi
+              ephemeral-storage: 2Gi
           envFrom:
             - configMapRef:
                 name: plex-config
@@ -114,7 +114,7 @@ spec:
             claimName: plex-data-pvc
         - name: plex-transcode
           emptyDir:
-            sizeLimit: 30Gi
+            sizeLimit: 40Gi         # size of video being transcoded + 100MB
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc
