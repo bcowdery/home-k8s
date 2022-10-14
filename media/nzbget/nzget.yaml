@@ -52,7 +52,7 @@ spec:
             limits:
               memory: 2Gi
               cpu: 1000m
-              ephemeral-storage: 2Gi
+              ephemeral-storage: 10Gi
           envFrom:
             - configMapRef:
                 name: nzbget-config
