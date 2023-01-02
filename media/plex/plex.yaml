@@ -33,14 +33,14 @@ spec:
       containers:
         - name: plex
           image: plexinc/pms-docker:latest
-          resources:
-            requests:
-              memory: 16Gi
-              cpu: 2
-            limits:
-              memory: 32Gi
-              cpu: 6
-              ephemeral-storage: 2Gi
+          # resources:
+          #   requests:
+          #     memory: 16Gi
+          #     cpu: 2
+          #   limits:
+          #     memory: 32Gi
+          #     cpu: 6s
+          #     ephemeral-storage: 2Gi
           envFrom:
             - configMapRef:
                 name: plex-config
