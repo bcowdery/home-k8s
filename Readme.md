@@ -28,6 +28,8 @@ kubectl config > ~/.kube/config
 
 # install nfs provisioner
 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+helm repo update
+
 helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
     --set nfs.server=192.168.1.2 \
     --set nfs.path=/volume1/nfs-shares/
@@ -35,6 +37,56 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 # install metallb
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
 ```
+
+## Intel GPU Support
+
+For systems using intel integrated GPU's, install the [Intel Device Operator](https://github.com/intel/helm-charts/tree/main/charts/device-plugin-operator) and [Intel GPU plugin](https://github.com/intel/helm-charts/tree/main/charts/gpu-device-plugin) to enable use of Quick Sync for Plex video transcoding.
+
+https://intel.github.io/intel-device-plugins-for-kubernetes/0.28/INSTALL.html
+
+
+## Install helm repositories
+
+```shell
+helm repo add jetstack https://charts.jetstack.io # for cert-manager
+helm repo add nfd https://kubernetes-sigs.github.io/node-feature-discovery/charts # for NFD
+helm repo add intel https://intel.github.io/helm-charts/ # for device-plugin-operator and plugins
+helm repo update
+```
+
+## Install cert-manager
+
+```
+helm install --wait \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.11.0 \
+  --set installCRDs=true
+```
+
+## Install NFD
+
+```
+helm install nfd nfd/node-feature-discovery \
+  --namespace node-feature-discovery --create-namespace --version 0.12.1 \
+  --set 'master.extraLabelNs={gpu.intel.com,sgx.intel.com}' \
+  --set 'master.resourceLabels={gpu.intel.com/millicores,gpu.intel.com/memory.max,gpu.intel.com/tiles,sgx.intel.com/epc}'
+```
+
+## Install Operator & GPU Plugin
+
+```
+helm install dp-operator intel/intel-device-plugins-operator \
+  --namespace inteldeviceplugins-system \
+  --create-namespace
+
+helm install gpu intel/intel-device-plugins-gpu \
+  --namespace inteldeviceplugins-system \
+  --create-namespace \
+  --set nodeFeatureRule=true
+```
+
 
 ## Namespaces
 ### Media

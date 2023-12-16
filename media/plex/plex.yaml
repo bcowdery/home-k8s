@@ -33,17 +33,17 @@ spec:
       containers:
         - name: plex
           image: plexinc/pms-docker:latest
-          # resources:
-          #   requests:
-          #     memory: 16Gi
-          #     cpu: 2
-          #   limits:
-          #     memory: 32Gi
-          #     cpu: 6s
-          #     ephemeral-storage: 2Gi
+          resources:
+            requests:
+              gpu.intel.com/i915: "1" 
+              cpu: 2000m
+              memory: 8Gi
+            limits:
+              gpu.intel.com/i915: "1" 
+              ephemeral-storage: 2Gi
           envFrom:
             - configMapRef:
-                name: plex-config
+                name: plex-config 
           env:
             - name: PLEX_CLAIM
               valueFrom:
@@ -93,15 +93,13 @@ spec:
               path: /identity
               port: pms
             initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
           livenessProbe:
             httpGet:
               path: /identity
               port: pms
             initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
           volumeMounts:
             - mountPath: "/config"
               name: plex-data
@@ -115,7 +113,8 @@ spec:
             claimName: plex-data-pvc
         - name: plex-transcode
           emptyDir:
-            sizeLimit: 40Gi         # size of video being transcoded + 100MB
+            medium: Memory
+            sizeLimit: 10Gi
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc
