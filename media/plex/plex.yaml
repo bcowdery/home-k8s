@@ -109,8 +109,12 @@ spec:
               name: shared-media
       volumes:
         - name: plex-data
-          persistentVolumeClaim:
-            claimName: plex-data-pvc
+          iscsi:
+            targetPortal: "192.168.1.2"
+            iqn: "iqn.2023-12.com.synology:deepthought.plex-1"
+            lun: 1
+            fsType: ext4
+            readOnly: false            
         - name: plex-transcode
           emptyDir:
             medium: Memory
@@ -118,21 +122,6 @@ spec:
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: plex-data-pvc
-  namespace: media
-  labels:
-    app: plex
-spec:
-  storageClassName: nfs-client
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 300Gi
 ---
 apiVersion: v1
 kind: Service
