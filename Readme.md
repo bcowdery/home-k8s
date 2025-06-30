@@ -99,6 +99,7 @@ Home media servers, download agents and supporting software.
 | NzbGet               | NZB download service                | `nzbget-tcp`           | http://192.168.1.203:6789       |
 | Sonarr               | TV Show download manager            | `sonarr-tcp`           | http://192.168.1.204:8989       |
 | Radarr               | Movie download manager              | `radarr-tcp`           | http://192.168.1.205:7878       |
+| Kavita               | Comics and ebook library            | `kavita-tcp`           | http://192.168.1.206:5000       |
 
 > 🔀 Internal DNS for media services `<service_name>.media.svc.cluster.local`
 
