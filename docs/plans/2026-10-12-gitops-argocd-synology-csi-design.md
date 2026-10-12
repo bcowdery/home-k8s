@@ -77,6 +77,14 @@ Adoption notes, from comparing each rendered app to the live cluster with a serv
 - Kavita and Mylar3 move to CSI-provisioned PVCs as the first users. Both are parked with little data, so they are recreated, not migrated. This also proves the driver works with the NAS.
 - The CSI driver does not prevent the stale-device failure described below. Its node plugin uses the same iSCSI login and mount path.
 
+> **💥 DANGER:** Never edit or rename a CSI-provisioned LUN in the DSM UI. Verified on Mylar3 (2026-10-12). The driver finds LUNs by name (`k8s-csi-<pv name>`), not by the UUID in `volumeHandle`, so a rename makes mounts and resizes fail with `Volume[<uuid>] is not found`. Saving an edit in the UI also makes DSM enforce its 10 GB minimum LUN size and silently grow the LUN, after which the driver refuses to resize below the real size (`expand size smaller than before`) and the resizer marks the request `ControllerResizeInfeasible`. Recovery: restore the exact original name, then set the PVC size to the LUN's real size.
+
+> **📌 Important:** There is no way to name CSI LUNs. They are always `k8s-csi-pvc-<uuid>`. To find the LUN behind a PVC: `kubectl get pv -o custom-columns=PVC:.spec.claimRef.name,LUN:.metadata.name`. The DSM LUN UUID is the PV's `spec.csi.volumeHandle`.
+
+> **🧠 Pro-tip:** Resizing works online and from git. Edit `spec.resources.requests.storage` in the PVC and Argo applies it. The LUN and the mounted ext4 filesystem grow in about a minute (tested 2Gi to 3Gi). A failed ("infeasible") request is not retried at the same size; request a different one.
+
+Verified on 2026-10-12 with Kavita and Mylar3: provisioning (PVC `Bound` in about 3 seconds), mount (ext4, read-write) and online expansion all work.
+
 > **💡 Note:** Migrating Plex, Sonarr, Radarr and NZBGet to CSI-provisioned volumes later is optional: scale down, `rsync` the config into a new PVC, switch the volume. It would give thin LUNs, snapshots and git-driven resizing.
 
 Existing LUNs, from the DSM API (`SYNO.Core.ISCSI.LUN` list). The DSM UI does not show UUIDs.
@@ -195,5 +203,5 @@ Next:
 
 - NZBGet `TZ`: `America/Halifax` (live) or `America/Edmonton` (repo)?
 - Dedicated, least-privilege DSM user for the CSI driver (`kube-csi` currently has admin rights). Rotate its password, which was shared in a chat transcript.
-- Confirm `volume1` is Btrfs. CSI snapshots need it.
+- Confirm `volume1` is Btrfs. CSI snapshots need it, and no snapshot has been tried yet.
 - Clean up the leftover dead pods (`Completed`, `ContainerStatusUnknown`, `Error`) in `media`.
