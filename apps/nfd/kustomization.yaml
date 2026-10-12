@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+helmCharts:
+  - name: node-feature-discovery
+    repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+    version: 0.12.1
+    releaseName: nfd
+    namespace: node-feature-discovery
+    # live CRDs are newer than this chart's (an earlier install left them), so don't manage them here
+    includeCRDs: false
+    valuesInline:
+      master:
+        extraLabelNs:
+          - gpu.intel.com
+          - sgx.intel.com
+        resourceLabels:
+          - gpu.intel.com/millicores
+          - gpu.intel.com/memory.max
+          - gpu.intel.com/tiles
+          - sgx.intel.com/epc
+# chart 0.12.1 leaves the worker Role and RoleBinding without a namespace
+patches:
+  - target:
+      kind: Role
+      name: nfd-node-feature-discovery-worker
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: node-feature-discovery
+  - target:
+      kind: RoleBinding
+      name: nfd-node-feature-discovery-worker
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: node-feature-discovery

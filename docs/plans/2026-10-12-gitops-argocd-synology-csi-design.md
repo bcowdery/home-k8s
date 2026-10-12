@@ -11,63 +11,73 @@ Date: 2026-10-12
 
 - microk8s cluster. Kubelet data lives at `/var/snap/microk8s/common/var/lib/kubelet`, not the default path.
 - Plain YAML in `media/` and `root/metallb/`, applied manually.
-- cert-manager, NFD, Intel device plugins, MetalLB and the NFS provisioner were installed with `helm install`.
+- cert-manager, NFD and the Intel device plugins were installed with `helm install`. MetalLB was applied from the raw v0.13.5 manifest.
 - Six apps (Plex, NZBGet, Sonarr, Radarr, Kavita, Mylar3) mount hand-made LUNs through inline `iscsi:` volumes, one IQN each, `lun: 1`.
 - `shared-media-pv` is a static NFS PV for the media library. It stays.
-- The NFS provisioner is no longer used and gets removed.
-- `media/mylar3/` is running but not yet committed.
 
 ## Decisions
 
 | Topic | Decision |
 |:--|:--|
-| Argo layout | App-of-apps. One root Application, one child per component. |
-| Existing LUNs | Adopt in place as static PVs. No data movement. |
+| Argo layout | One ApplicationSet creates an Application per directory under `apps/`. No per-app Application files. |
+| Directory layout | `bootstrap/`, `argocd/`, `apps/`. Organised by component, not namespace. Platform components and workloads live side by side in `apps/`. |
+| App format | Every `apps/<name>/` is a kustomize directory. Helm charts use `helmCharts:` with the version pinned. Argo runs kustomize with `--enable-helm`. |
 | Secrets | Sealed Secrets. Ciphertext is committed. |
 | Repo | Public GitHub. Argo pulls anonymously. |
-| NFS provisioner | Dropped. |
-| Helm charts | Treated as platform plumbing, kept apart from workloads. |
+| NFS provisioner | Removed (2026-10-12). Nothing used its StorageClass. |
+| Existing six LUNs | Stay on inline `iscsi:` volumes, managed declaratively. Not adopted into the CSI driver. |
+| synology-csi scope | New volumes only. Kavita and Mylar3 (parked, little data) are recreated on CSI-provisioned PVCs as the first users. |
+| Sync ordering | No sync waves (an ApplicationSet cannot order its Applications). Retry with backoff covers CRDs and secrets that land late. |
+| Pruning | Off at first (`prune: false`). Turn on once the setup has proven itself. |
 
 ## Repo layout
 
 ```
+bootstrap/             # bootstrap.sh and notes for bringing up a fresh cluster
 argocd/
-  install/             # Argo CD helm values and namespace (hand-applied once)
-  root-app.yaml        # app-of-apps, points at argocd/apps/
-  apps/                # one Application per component
-platform/
-  sealed-secrets/
-  synology-csi/        # manifests, StorageClass, VolumeSnapshotClass, sealed client-info
-  metallb/             # moved from root/metallb: bgppeer.yaml, IP pool
-media/                 # existing apps plus static PVs and PVCs for adopted LUNs
+  values.yaml          # Argo CD helm values, installed once by bootstrap.sh
+  applicationset.yaml  # one Application per apps/* directory
+apps/
+  sealed-secrets/  snapshot-controller/  synology-csi/
+  metallb/  cert-manager/  nfd/  intel-device-plugins/
+  media-shared/        # media namespace, shared NFS media PV/PVC
+  plex/  sonarr/  radarr/  nzbget/  kavita/  mylar3/
 docs/plans/
 ```
 
-Sync waves:
+Pinned versions (verified against the chart repositories, 2026-10-12):
 
-| Wave | Components |
-|:--|:--|
-| -3 | sealed-secrets |
-| -2 | synology-csi, metallb |
-| -1 | cert-manager, NFD, Intel operator and GPU plugin |
-| 0 | media |
+| Component | Source | Version |
+|:--|:--|:--|
+| Argo CD | `argo/argo-cd` chart | 10.10.3 (Argo CD v3.5.5) |
+| Sealed Secrets | `https://bitnami.github.io/sealed-secrets` | 2.20.0 (controller 0.40.0) |
+| synology-csi | community chart, `christian-schlichtherle/synology-csi-chart` | 0.11.4 (driver v1.4.0) |
+| external-snapshotter | `kubernetes-csi/external-snapshotter` | v8.6.0 |
+| MetalLB | raw manifest | v0.13.5 (unchanged) |
+| cert-manager | `jetstack/cert-manager` | v1.13.3 (unchanged) |
+| NFD | `node-feature-discovery` | 0.12.1 (unchanged) |
+| Intel operator and GPU plugin | `intel-device-plugins-*` | 0.28.0 (unchanged) |
 
-Other layout changes:
+Adoption notes, from comparing each rendered app to the live cluster with a server-side `kubectl diff`:
 
-- `nzget.yaml` is renamed to `nzbget.yaml`.
-- Third-party charts are pinned to specific versions (cert-manager v1.11.0, NFD 0.12.1) and bumped deliberately.
-- `media` starts with automated sync and `prune: false`. Turn pruning on once the setup has proven itself.
-- synology-csi has no official Helm chart. Its Application points at upstream manifests, patched for the microk8s kubelet path.
+- cert-manager, NFD and the Intel plugins render to zero diff. MetalLB differs only by the injected CRD `caBundle`, which the ApplicationSet ignores.
+- NFD: the chart leaves the worker Role and RoleBinding without a namespace, so `apps/nfd/` patches them. The live NFD CRDs are newer than chart 0.12.1's, left by an earlier install, so `includeCRDs: false` stops Argo downgrading them.
+- cert-manager: the `startupapicheck` post-install hook is disabled, because Helm already ran and deleted it.
+- All Applications use `ServerSideApply=true`, since several CRDs exceed the client-side annotation size limit.
+- Plex gets one deliberate change on first sync: the claim-token `secretKeyRef` becomes `optional: true`, which restarts the pod once.
+- NZBGet has drift: the live ConfigMap says `TZ: America/Halifax`, the repo said `America/Edmonton`. Decide which is correct before the first sync, or Argo reverts the live value.
 
 ## Storage
 
-- `StorageClass` `synology-iscsi`: `reclaimPolicy: Retain`, `allowVolumeExpansion: true`, `fsType: ext4`, location `volume1`.
-- A `VolumeSnapshotClass` is provided alongside it.
-- The class must create thin-provisioned LUNs. DSM does not support snapshots on thick LUNs, and snapshots also need a Btrfs volume (to be confirmed for `volume1`). The six adopted LUNs are thick, so CSI snapshots only apply to newly provisioned volumes.
-- New apps request a PVC against the class. The LUN, target and mapping are created on the NAS at deploy time.
-- Existing apps each get a static PV with `volumeHandle` set to the LUN's DSM UUID, plus a PVC. The pod mounts the PVC instead of the inline `iscsi:` block.
+- The six existing LUNs stay on inline `iscsi:` volumes. They work, Argo manages them fine as declared, and adopting hand-made LUNs into the CSI driver is unverified and only buys easier resizing.
+- The CSI driver is for new volumes. Every iSCSI LUN it creates is thin-provisioned, which is what makes snapshots possible. Snapshots also need a Btrfs volume, which is unconfirmed for `volume1`.
+- `StorageClass` `synology-iscsi`: `reclaimPolicy: Retain`, `allowVolumeExpansion: true`, `fsType: ext4`, location `/volume1`. Resizing then becomes a PVC edit in git instead of a DSM resize plus `resize2fs`.
+- The node plugin needs `node.kubeletPath: /var/snap/microk8s/common/var/lib/kubelet`.
+- The DSM credentials go in a SealedSecret named `synology-csi-client-info`, referenced from the chart with `clientInfoSecret.create: false`.
+- Kavita and Mylar3 move to CSI-provisioned PVCs as the first users. Both are parked with little data, so they are recreated, not migrated. This also proves the driver works with the NAS.
+- The CSI driver does not prevent the stale-device failure described below. Its node plugin uses the same iSCSI login and mount path.
 
-> **⚠️ Warning:** Adopting a hand-made LUN as a static PV depends on the driver finding the target the LUN is already mapped to. This is unverified. Trial it on Mylar3 first. If it fails, the other apps keep their inline `iscsi:` volumes and only new apps use the StorageClass.
+> **💡 Note:** Migrating Plex, Sonarr, Radarr and NZBGet to CSI-provisioned volumes later is optional: scale down, `rsync` the config into a new PVC, switch the volume. It would give thin LUNs, snapshots and git-driven resizing.
 
 Existing LUNs, from the DSM API (`SYNO.Core.ISCSI.LUN` list). The DSM UI does not show UUIDs.
 
@@ -80,18 +90,10 @@ Existing LUNs, from the DSM API (`SYNO.Core.ISCSI.LUN` list). The DSM UI does no
 | Kavita | LUN-kavita-data | `59cd8ffb-f290-4253-97f1-a957c96afe1b` | 10 GiB | `iqn.2025-06.com.synology:deepthought.kavita-1` |
 | Mylar3 | LUN-mylar-data | `093280ae-f21c-4989-9d1c-db8be775a6d2` | 2 GiB | `iqn.2025-06.com.synology:deepthought.mylar-1` |
 
-Mylar3 trial procedure:
-
-1. Scale the deployment to 0.
-2. Apply the static PV and PVC.
-3. Switch the pod's volume to the PVC.
-4. Scale to 1 and confirm the config and database are intact.
-
-The remaining five apps follow only if the trial succeeds.
 
 ## Secrets
 
-- Sealed Secrets controller runs in `kube-system` (or its own namespace), wave -3.
+- The Sealed Secrets controller runs in `kube-system` as `sealed-secrets-controller`, the name `kubeseal` looks for by default.
 - Secret to seal: synology-csi `client-info` (DSM host, port, user, password).
 - `plex-claim-token` is not sealed. The claim token is only used for first-time Plex setup or a re-claim. `PLEX_CLAIM` stays in `plex.yaml` with `optional: true` on the `secretKeyRef`, so Plex starts without the Secret. The Secret manifest is removed from the repo, because Argo would otherwise apply and revert it. Create it by hand when needed: `kubectl create secret generic plex-claim-token -n media --from-literal=token=claim-XXXX`. Argo ignores it because it is not in git.
 - Seal with `kubeseal` and commit the resulting `SealedSecret` YAML. Plaintext never enters the repo.
@@ -104,12 +106,12 @@ Use a dedicated DSM account for the CSI driver rather than the admin account, wi
 
 ## Bootstrap
 
-Two manual steps, then git is the source of truth:
+`bootstrap/bootstrap.sh` does two things, then git is the source of truth:
 
-1. `helm install argocd` into the `argocd` namespace using `argocd/install/` values.
-2. `kubectl apply -f argocd/root-app.yaml`.
+1. `helm upgrade --install argocd` into the `argocd` namespace with `argocd/values.yaml` (the UI is a LoadBalancer on 192.168.1.208).
+2. `kubectl apply -f argocd/applicationset.yaml`.
 
-`bootstrap.sh` shrinks to those two commands. The README's per-component install sections are replaced with a description of the Application layout.
+`bootstrap/Readme.md` covers a fresh-cluster rebuild, including backing up and restoring the Sealed Secrets key before the first sync.
 
 ## Migrating the existing helm releases
 
@@ -117,7 +119,7 @@ Argo renders the charts itself and adopts the live resources. The old Helm relea
 
 > **💥 DANGER:** Do not `helm uninstall` the old releases. That deletes the resources Argo just adopted. Remove only the release records, per namespace: `kubectl delete secret -l owner=helm,name=<release> -n <namespace>`.
 
-The NFS provisioner is the exception. It is removed for real, after checking nothing uses its StorageClass:
+The NFS provisioner was the exception. It was removed for real on 2026-10-12 (`helm uninstall`), after checking nothing used its StorageClass:
 
 ```shell
 kubectl get pvc -A -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,SC:.spec.storageClassName
@@ -135,6 +137,8 @@ The cluster is a single node (`kube1`, Ubuntu 22.04, containerd 1.6.28) on Kuber
 > **📌 Important:** Completed 2026-10-12. Cluster went 1.25.16 to 1.33.13 in eight single-minor hops with no data loss. Lessons: the 1.28 hop swaps Calico and the node sits `NotReady` for several minutes, which is normal. The 1.28 hop also left an orphaned `speaker` process holding port 7946 (the MetalLB pod crash-looped with `address already in use`). Fix: find it with `sudo ss -ltnp | grep 7946`, `sudo kill <pid>`, then `kubectl delete pod -n metallb-system <speaker pod>` to reset the backoff.
 
 > **💥 DANGER:** The upgrade broke the iSCSI mounts for Plex, Sonarr, Radarr and NZBGet, and the damage was invisible from Kubernetes. Pods stayed `Running` and the NAS showed every target `connected`, but the iSCSI sessions had dropped and re-logged-in, the LUNs came back as new `sdX` devices, and the containers kept mounts bound to the dead ones. Symptoms: `Input/output error` or `Read-only file system` under `/config`, kernel `EXT4-fs error (device sdX)` for devices missing from `lsblk`, and Plex returning HTTP 500 while `/identity` still answered 200. Fix: scale the affected deployments to 0, confirm on the node that `iscsiadm -m session` is empty and no `kubernetes.io~iscsi` mounts remain, then scale back up (no data was lost). Prevention: scale iSCSI-backed apps to 0 before each hop, or at minimum before any hop that restarts containerd, and test `touch /config/.rwtest` in each pod after every hop. A pod being `Ready` does not prove its volume is writable.
+
+> **📌 Important:** Ubuntu was patched afterwards (22.04.3 to 22.04.5, kernel 5.15.0-86 to 5.15.0-198) in a window with the iSCSI apps scaled to 0, followed by a reboot. The reboot cleared the orphaned MetalLB and Intel GPU plugin processes and showed the cluster survives a cold boot.
 
 > **💡 Note:** Kavita and Mylar3 are parked (`replicas: 0`) on the cluster and in git. Set `replicas: 1` in the manifest to bring them back, so Argo's self-heal does not fight it.
 
@@ -161,25 +165,35 @@ Verify after each hop: node `Ready`, `kube-system` pods up, Plex `/identity` ans
 
 ## Implementation order
 
-0. Upgrade microk8s to a version Argo CD supports (see above).
-1. Commit `media/mylar3/`. Fix the `nzbget.yaml` name. Move `root/metallb/` to `platform/metallb/`.
-2. Install Argo CD and the root app with only Sealed Secrets enabled.
-3. Add platform Applications one at a time, adopting each existing release.
-4. Add synology-csi, the StorageClass and the sealed client-info.
-5. Add the `media` Application with `prune: false`.
-6. Run the Mylar3 static PV trial. Roll out to the other apps or stop, per the result.
-7. Remove the NFS provisioner. Update the README and `bootstrap.sh`.
+Done:
+
+1. Upgrade microk8s 1.25 to 1.33 and patch Ubuntu.
+2. Resize the Sonarr and Radarr filesystems to match their LUNs.
+3. Remove the NFS provisioner.
+4. Clean up the repo (renames, `.gitignore`, track Mylar3, park Kavita and Mylar3).
+5. Restructure into `bootstrap/`, `argocd/`, `apps/`; write the Argo CD values, ApplicationSet, and the platform apps; verify each against the live cluster with `kubectl diff`.
+
+Next:
+
+6. Settle the NZBGet `TZ` drift.
+7. Push to GitHub, run `bootstrap/bootstrap.sh`, and watch the Applications adopt the running components. Plex restarts once.
+8. Seal the DSM credentials and add `apps/synology-csi/` (chart, `StorageClass`, `VolumeSnapshotClass`).
+9. Recreate Kavita and Mylar3 on CSI-provisioned PVCs.
+10. Remove the stale Helm release records for cert-manager, NFD, dp-operator and gpu (never `helm uninstall` them).
+11. Later, one at a time through git: bump NFD, then the Intel plugins and cert-manager, then MetalLB. Ubuntu 24.04 is a separate project.
 
 ## Findings from the live cluster (2026-10-12)
 
-- Helm releases: cert-manager v1.13.3, NFD 0.12.1, Intel operator and GPU plugin 0.28.0, nfs-subdir-external-provisioner 4.0.17. Pin to these, not the versions in the old README.
-- MetalLB is not a Helm release. It was applied from the v0.13.5 manifest. The Application uses that manifest, with the existing `IPAddressPool` `local-usg` and the BGP advertisement and peer kept in `platform/metallb/`.
+- Helm releases: cert-manager v1.13.3, NFD 0.12.1, Intel operator and GPU plugin 0.28.0, Pinned to these, not the versions in the old README.
+- MetalLB is not a Helm release. It was applied from the v0.13.5 manifest. `apps/metallb/` uses that manifest plus `config.yaml` with the existing `IPAddressPool` `local-usg`, the BGP advertisement and the BGP peer (192.168.1.1, ASN 64500 to 64501).
 - The only PVC is `shared-media-pvc` (static NFS). Nothing uses the `nfs-client` StorageClass, so the provisioner is safe to remove.
-- No VolumeSnapshot CRDs exist. The snapshot class needs the external-snapshotter CRDs and snapshot-controller, added as a platform component at wave -2.
-- LoadBalancer addresses in use: .201 dashboard, .202 Plex, .203 NZBGet, .204 Sonarr, .205 Radarr, .206 Kavita, .207 Mylar3. The Argo CD UI, if exposed, takes .208.
-- `media/plex/plex-claim-token.yaml` is a plaintext Secret in git history. The token was only used for first-time setup and is expired, so no history rewrite is needed. As part of the Plex migration, remove the manifest (and its line in `bootstrap.sh`) and mark the `secretKeyRef` in `plex.yaml` `optional: true`.
+- No VolumeSnapshot CRDs exist. The snapshot class needs the external-snapshotter CRDs and snapshot-controller, added as `apps/snapshot-controller/`.
+- LoadBalancer addresses in use: .201 dashboard, .202 Plex, .203 NZBGet, .204 Sonarr, .205 Radarr, .206 Kavita, .207 Mylar3. The Argo CD UI takes .208.
+- `media/plex/plex-claim-token.yaml` is a plaintext Secret in git history. The token was only used for first-time setup and is expired, so no history rewrite is needed. The manifest is removed and the `secretKeyRef` in `plex.yaml` is `optional: true`.
 
 ## Open items
 
-- Whether to expose the Argo CD UI on a MetalLB address (for example 192.168.1.207) or keep it on port-forward.
-- Dedicated DSM user for the CSI driver.
+- NZBGet `TZ`: `America/Halifax` (live) or `America/Edmonton` (repo)?
+- Dedicated, least-privilege DSM user for the CSI driver (`kube-csi` currently has admin rights). Rotate its password, which was shared in a chat transcript.
+- Confirm `volume1` is Btrfs. CSI snapshots need it.
+- Clean up the leftover dead pods (`Completed`, `ContainerStatusUnknown`, `Error`) in `media`.

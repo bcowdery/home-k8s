@@ -1,0 +1,11 @@
+# Argo CD helm chart values. Installed once by bootstrap/bootstrap.sh.
+# Chart: argo/argo-cd 10.10.3 (Argo CD v3.5.5)
+configs:
+  cm:
+    # apps under apps/ inflate Helm charts through kustomize
+    kustomize.buildOptions: --enable-helm
+    timeout.reconciliation: 180s
+server:
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.208
