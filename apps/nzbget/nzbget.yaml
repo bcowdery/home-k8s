@@ -28,7 +28,7 @@ metadata:
   name: nzbget-deployment
   namespace: media
 spec:
-  replicas: 0   # migrating the config volume to CSI
+  replicas: 1
   revisionHistoryLimit: 3
   strategy:
     type: Recreate
@@ -71,6 +71,13 @@ spec:
             - name: http-web
               protocol: TCP
               containerPort: 6789
+          # liveness and readiness only start once this passes, so a slow first start
+          # (database upgrade) is not killed halfway through
+          startupProbe:
+            tcpSocket:
+              port: http-web
+            failureThreshold: 60    # 10s x 60 = 10min
+            periodSeconds: 10
           readinessProbe:
             tcpSocket:
               port: http-web
@@ -90,12 +97,8 @@ spec:
               name: shared-media
       volumes:
         - name: nzbget-data
-          iscsi:
-            targetPortal: "192.168.1.2"
-            iqn: "iqn.2023-12.com.synology:deepthought.nzbget-1"
-            lun: 1
-            fsType: ext4
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: nzbget-data
         - name: nzbget-intermediate
           emptyDir:                       # size of files being downloaded + failed downloads
             sizeLimit: 80Gi               # assume bluray remux ~50Gi
