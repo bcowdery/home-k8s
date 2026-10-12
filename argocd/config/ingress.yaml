@@ -1,0 +1,35 @@
+# Argo CD behind Traefik. argocd-server serves its own self-signed TLS on 443, so Traefik talks
+# HTTPS to it and skips verifying that internal certificate (cluster-internal hop only).
+# Browsers get the real wildcard certificate from Traefik.
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: argocd-insecure
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  insecureSkipVerify: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-insecure@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: argocd.home.pointyspoon.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 443
