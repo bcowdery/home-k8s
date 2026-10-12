@@ -16,7 +16,7 @@ metadata:
   name: radarr-deployment
   namespace: media
 spec:
-  replicas: 1
+  replicas: 0   # migrating the config volume to CSI
   revisionHistoryLimit: 3
   strategy:
     type: Recreate
