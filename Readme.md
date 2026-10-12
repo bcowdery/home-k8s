@@ -9,25 +9,36 @@ Single-node microk8s cluster, managed with GitOps. [Argo CD](https://argo-cd.rea
 
 ```
 bootstrap/    one-time setup for a fresh cluster (see bootstrap/Readme.md)
-argocd/       Argo CD install values and the ApplicationSet that registers apps/
-apps/         one directory per component, each with a kustomization.yaml
-docs/plans/   design documents
+argocd/       Argo CD install values, and config/ with the projects and the ApplicationSet
+apps/
+  core/       cluster plumbing, Argo CD project "core"
+  media/      media apps and their storage, Argo CD project "media"
+docs/         design documents and runbooks
 ```
 
-Every directory under `apps/` becomes an Argo CD Application of the same name. To add a component, add a directory with a `kustomization.yaml`. Plain manifests list themselves under `resources:`. Helm charts use `helmCharts:` with the chart version pinned (see `apps/cert-manager/` for an example).
+Every directory under `apps/core/` and `apps/media/` becomes an Argo CD Application of the same name, in the project named by its parent folder. To add a component, add a directory with a `kustomization.yaml`. Plain manifests list themselves under `resources:`. Helm charts use `helmCharts:` with the chart version pinned (see `apps/core/cert-manager/` for an example).
 
-| Directory                | What it is                                           | Namespace                   |
-|:-------------------------|:-----------------------------------------------------|:----------------------------|
-| `sealed-secrets`         | Encrypted secrets that are safe to commit            | `kube-system`               |
-| `snapshot-controller`    | CSI volume snapshot CRDs and controller              | `kube-system`               |
-| `metallb`                | LoadBalancer IPs over BGP, pool and peer config      | `metallb-system`            |
-| `cert-manager`           | Issues the Intel operator's webhook certificate      | `cert-manager`              |
-| `nfd`                    | Node Feature Discovery, labels the Intel GPU         | `node-feature-discovery`    |
-| `intel-device-plugins`   | Operator and GPU plugin for Plex hardware transcoding | `inteldeviceplugins-system` |
-| `media-shared`           | `media` namespace, shared NFS media volume           | `media`                     |
-| `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3` | Media applications | `media`                     |
+| Project | Directory                | What it is                                            | Namespace                   |
+|:--------|:-------------------------|:------------------------------------------------------|:----------------------------|
+| core    | `sealed-secrets`         | Encrypted secrets that are safe to commit             | `kube-system`               |
+| core    | `snapshot-controller`    | CSI volume snapshot CRDs and controller               | `kube-system`               |
+| core    | `metallb`                | LoadBalancer IPs over BGP, pool and peer config       | `metallb-system`            |
+| core    | `cert-manager`           | Issues the Intel operator's webhook certificate       | `cert-manager`              |
+| core    | `nfd`                    | Node Feature Discovery, labels the Intel GPU          | `node-feature-discovery`    |
+| core    | `intel-device-plugins`   | Operator and GPU plugin for Plex hardware transcoding | `inteldeviceplugins-system` |
+| core    | `synology-csi`           | Provisions iSCSI volumes on the Synology NAS          | `synology-csi`              |
+| media   | `media-shared`           | `media` namespace, shared NFS media volume            | `media`                     |
+| media   | `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3` | Media applications        | `media`                     |
 
-> **💡 Note:** Pruning is off. Deleting a directory from `apps/` removes the Application but leaves its resources running until you delete them by hand. Turn on `prune` in `argocd/applicationset.yaml` once you trust the setup.
+## Conventions
+
+- **Projects:** `core` is unrestricted. `media` may only deploy into the `media` namespace and may only create Namespaces and PersistentVolumes at cluster scope. Both are defined in `argocd/config/projects.yaml`.
+- **Labels:** apps written here carry `app.kubernetes.io/name` and `app.kubernetes.io/part-of` (the project name), added in each `kustomization.yaml`. They go on object metadata only, never on selectors or pod templates, so adding them restarts nothing. The older `app: <name>` label stays because Services and Deployment selectors depend on it. Helm charts keep their own labels.
+- **Annotations:** each media Service has `link.argocd.argoproj.io/external-link`, which shows up as a link in the Argo CD UI. Namespaces carry `kubernetes.io/description`.
+- **Prune:** on. Removing a manifest from git deletes it from the cluster. Namespaces and volume claims are exempt (`argocd.argoproj.io/sync-options: Prune=false`) so a mistaken delete can't take data with it, and the Applications leave their resources running if an Application itself is ever deleted.
+- **Namespaces:** one per component under `core`, plus `media`. Sealed Secrets and the snapshot controller stay in `kube-system` because `kubeseal` and the upstream manifests expect them there.
+
+> **📌 Important:** Everything under `argocd/config/` is itself managed by Argo CD (the `argocd-config` Application), so changes to projects or the ApplicationSet go live on push.
 
 # Getting started
 

@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # applied from the raw manifest originally, not a Helm release
+  - https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
+  - config.yaml
+patches:
+  - target:
+      kind: Namespace
+      name: metallb-system
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: metallb-system
+        labels:
+          app.kubernetes.io/part-of: core
+        annotations:
+          kubernetes.io/description: MetalLB, hands out LoadBalancer IPs from the USG range over BGP
+          argocd.argoproj.io/sync-options: Prune=false

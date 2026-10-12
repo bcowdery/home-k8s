@@ -14,7 +14,7 @@ Steps for bringing up a fresh cluster. Argo CD installs everything else from `ap
 ./bootstrap/bootstrap.sh
 ```
 
-This installs Argo CD with `argocd/values.yaml` and registers the ApplicationSet. Argo then creates one Application per directory in `apps/` and syncs them.
+This installs Argo CD with `argocd/values.yaml` and applies `argocd/root-app.yaml`. That Application syncs `argocd/config/` (the `core` and `media` projects and the ApplicationSet), and the ApplicationSet then creates one Application per directory in `apps/core/` and `apps/media/`.
 
 > **💡 Note:** Expect some Applications to fail their first sync (a CRD that doesn't exist yet, a secret that hasn't been created). Retry with backoff is enabled, and they heal once the dependency lands.
 

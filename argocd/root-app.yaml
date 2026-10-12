@@ -1,0 +1,22 @@
+# Applied once by bootstrap/bootstrap.sh. Argo CD then keeps its own projects and the
+# ApplicationSet in sync with argocd/config/, so they are managed from git like everything else.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-config
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/bcowdery/home-k8s.git
+    targetRevision: main
+    path: argocd/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

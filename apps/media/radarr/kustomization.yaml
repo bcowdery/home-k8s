@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - radarr.yaml
+  - pvc.yaml
+# metadata only: labels are not added to selectors or pod templates, so nothing restarts
+labels:
+  - pairs:
+      app.kubernetes.io/name: radarr
+      app.kubernetes.io/part-of: media
+patches:
+  # shows as a clickable link on the Service in the Argo CD UI
+  - target:
+      kind: Service
+      name: radarr-tcp
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: radarr-tcp
+        annotations:
+          link.argocd.argoproj.io/external-link: http://192.168.1.205:7878

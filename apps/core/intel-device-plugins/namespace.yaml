@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inteldeviceplugins-system
+  labels:
+    app.kubernetes.io/part-of: core
+  annotations:
+    kubernetes.io/description: Intel device plugin operator and GPU plugin for Plex hardware transcoding
+    # never let Argo CD delete a namespace if its manifest is removed from git
+    argocd.argoproj.io/sync-options: Prune=false

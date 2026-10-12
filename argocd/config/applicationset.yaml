@@ -1,0 +1,64 @@
+# One Argo CD Application per directory under apps/core and apps/media.
+# The folder name is the Argo CD project, so adding apps/media/foo with a
+# kustomization.yaml creates the Application "foo" in the "media" project.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    # If an Application is ever deleted (a directory moved, a git fetch failing), leave what it
+    # deployed running. Without this the controller adds a finalizer that cascade-deletes it.
+    preserveResourcesOnDeletion: true
+  generators:
+    - git:
+        repoURL: https://github.com/bcowdery/home-k8s.git
+        revision: main
+        directories:
+          - path: apps/core/*
+          - path: apps/media/*
+  template:
+    metadata:
+      name: '{{ .path.basename }}'
+      labels:
+        app.kubernetes.io/part-of: '{{ index .path.segments 1 }}'
+    spec:
+      project: '{{ index .path.segments 1 }}'
+      source:
+        repoURL: https://github.com/bcowdery/home-k8s.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+        # namespaces are set on the resources themselves
+      syncPolicy:
+        automated:
+          prune: true      # git is authoritative; Namespaces and volume claims opt out with Prune=false
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true            # large CRDs exceed the client-side annotation limit
+          - RespectIgnoreDifferences=true
+          - PruneLast=true                  # delete only after everything else is healthy
+        retry:
+          limit: 8         # tolerates CRDs and secrets landing after the apps that use them
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m
+      # controllers (MetalLB, cert-manager, ...) inject the real CA into these
+      ignoreDifferences:
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          jqPathExpressions:
+            - .spec.conversion.webhook.clientConfig.caBundle
+        - group: admissionregistration.k8s.io
+          kind: ValidatingWebhookConfiguration
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
+        - group: admissionregistration.k8s.io
+          kind: MutatingWebhookConfiguration
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle

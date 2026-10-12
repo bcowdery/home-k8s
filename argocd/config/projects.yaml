@@ -1,0 +1,43 @@
+# Argo CD projects. An app's project is the folder it lives in under apps/ (see applicationset.yaml).
+#
+# core:  cluster plumbing, trusted and unrestricted.
+# media: the media apps. May only deploy into the media namespace, and only create
+#        Namespaces and PersistentVolumes at cluster scope, so a media app cannot touch
+#        RBAC, CRDs or other namespaces.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: core
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"   # projects must exist before the apps that use them
+spec:
+  description: Cluster plumbing - networking, certificates, node features, storage drivers and secrets
+  sourceRepos:
+    - '*'    # charts and manifests are also pulled from upstream repositories
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: media
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Media servers, download agents and their shared storage
+  sourceRepos:
+    - https://github.com/bcowdery/home-k8s.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: media
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: ''
+      kind: PersistentVolume

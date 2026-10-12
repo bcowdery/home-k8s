@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: media
+  labels:
+    app.kubernetes.io/part-of: media
+  annotations:
+    kubernetes.io/description: Media servers, download agents and their shared storage
+    # never let Argo CD delete a namespace if its manifest is removed from git
+    argocd.argoproj.io/sync-options: Prune=false

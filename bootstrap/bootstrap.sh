@@ -22,8 +22,8 @@ helm upgrade --install argocd argo/argo-cd \
   --values argocd/values.yaml \
   --wait
 
-echo "==> Registering apps/ with Argo CD"
-kubectl apply -f argocd/applicationset.yaml
+echo "==> Handing argocd/config (projects and the ApplicationSet) over to Argo CD"
+kubectl apply -f argocd/root-app.yaml
 
 echo
 echo "Done. Argo CD UI: https://192.168.1.208 (user: admin)"

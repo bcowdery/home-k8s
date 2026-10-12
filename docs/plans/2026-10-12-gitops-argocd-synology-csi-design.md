@@ -20,7 +20,7 @@ Date: 2026-10-12
 | Topic | Decision |
 |:--|:--|
 | Argo layout | One ApplicationSet creates an Application per directory under `apps/`. No per-app Application files. |
-| Directory layout | `bootstrap/`, `argocd/`, `apps/`. Organised by component, not namespace. Platform components and workloads live side by side in `apps/`. |
+| Directory layout | `bootstrap/`, `argocd/`, `apps/core/` and `apps/media/`. The folder is the Argo CD project. Organised by component, not namespace. |
 | App format | Every `apps/<name>/` is a kustomize directory. Helm charts use `helmCharts:` with the version pinned. Argo runs kustomize with `--enable-helm`. |
 | Secrets | Sealed Secrets. Ciphertext is committed. |
 | Repo | Public GitHub. Argo pulls anonymously. |
@@ -28,7 +28,7 @@ Date: 2026-10-12
 | Existing six LUNs | Stay on inline `iscsi:` volumes, managed declaratively. Not adopted into the CSI driver. |
 | synology-csi scope | New volumes only. Kavita and Mylar3 (parked, little data) are recreated on CSI-provisioned PVCs as the first users. |
 | Sync ordering | No sync waves (an ApplicationSet cannot order its Applications). Retry with backoff covers CRDs and secrets that land late. |
-| Pruning | Off at first (`prune: false`). Turn on once the setup has proven itself. |
+| Pruning | On since 2026-10-12. Namespaces and volume claims carry `Prune=false`; Applications have no deletion finalizer (`preserveResourcesOnDeletion`). |
 
 ## Repo layout
 
@@ -36,13 +36,18 @@ Date: 2026-10-12
 bootstrap/             # bootstrap.sh and notes for bringing up a fresh cluster
 argocd/
   values.yaml          # Argo CD helm values, installed once by bootstrap.sh
-  applicationset.yaml  # one Application per apps/* directory
+  root-app.yaml        # applied once; keeps argocd/config in sync from git
+  config/
+    projects.yaml      # the core and media projects
+    applicationset.yaml  # one Application per apps/core/* and apps/media/* directory
 apps/
-  sealed-secrets/  snapshot-controller/  synology-csi/
-  metallb/  cert-manager/  nfd/  intel-device-plugins/
-  media-shared/        # media namespace, shared NFS media PV/PVC
-  plex/  sonarr/  radarr/  nzbget/  kavita/  mylar3/
-docs/plans/
+  core/                # project "core"
+    sealed-secrets/  snapshot-controller/  synology-csi/
+    metallb/  cert-manager/  nfd/  intel-device-plugins/
+  media/               # project "media"
+    media-shared/      # media namespace, shared NFS media PV/PVC
+    plex/  sonarr/  radarr/  nzbget/  kavita/  mylar3/
+docs/
 ```
 
 Pinned versions (verified against the chart repositories, 2026-10-12):
