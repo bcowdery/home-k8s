@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - middleware.yaml
+helmCharts:
+  # The main chart bundles 25 CRDs, 15 of them for Traefik Hub (a commercial product). The separate
+  # CRD chart ships only the 10 traefik.io ones (hub, Gateway API and knative are off by default).
+  - name: traefik-crds
+    repo: https://traefik.github.io/charts
+    version: 1.18.0
+    releaseName: traefik-crds
+    namespace: traefik
+    includeCRDs: true
+  - name: traefik
+    repo: https://traefik.github.io/charts
+    version: 41.7.1
+    releaseName: traefik
+    namespace: traefik
+    includeCRDs: false
+    valuesInline:
+      ingressClass:
+        enabled: true
+        isDefaultClass: true
+        name: traefik
+      ports:
+        web:
+          http:
+            redirections:
+              entryPoint:
+                to: websecure
+                scheme: https
+                permanent: true
+        websecure:
+          http:
+            middlewares:
+              - traefik-lan-only@kubernetescrd
+      service:
+        annotations:
+          metallb.io/loadBalancerIPs: 192.168.1.209
+        spec:
+          # keeps the client's real source address, which the allowlist needs
+          externalTrafficPolicy: Local

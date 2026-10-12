@@ -1,0 +1,14 @@
+# Applied to the websecure entrypoint, so every route is limited to the LAN. Nothing is
+# port-forwarded to Traefik, this is the second lock.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: lan-only
+  namespace: traefik
+  annotations:
+    # on a fresh cluster the CRD lands in the same sync as this object
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  ipAllowList:
+    sourceRange:
+      - 192.168.0.0/16
