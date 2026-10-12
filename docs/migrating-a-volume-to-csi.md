@@ -1,11 +1,12 @@
 # Migrating an app's config volume from a hand-made LUN to synology-csi
 
-Proven on Kavita (2026-10-12): 235 files, 54 MB, checksum-verified identical.
+Proven on 2026-10-12 on Kavita (235 files, 54 MB), NZBGet, Sonarr (1,412 files, 587 MB) and Radarr (4,189 files, 1.6 GB). Every copy was checksum-verified identical.
 
 The old LUN is only ever mounted read-only, so it stays intact as the fallback.
 
 ## Before you start
 
+- Size every new volume at **10Gi or more**. LUNs are thin, so it costs nothing, and the DSM UI enforces a 10 GB minimum that bites if anyone ever edits one.
 - The app must be scaled to **0 in git** (`replicas: 0`). Argo CD's self-heal reverts `kubectl scale`.
 - The target PVC must exist, bound and empty. Add it to the app's directory (`pvc.yaml`, listed in its `kustomization.yaml`) with `storageClassName: synology-csi-iscsi-retain`.
 - Do not edit or rename any CSI LUN in the DSM UI. See the warning in the design doc.
@@ -51,7 +52,7 @@ The old LUN is only ever mounted read-only, so it stays intact as the fallback.
 
 ## Gotchas
 
-- **Add a `startupProbe`.** A restarted app may upgrade its database before it listens. Liveness kills a container that is still starting (exit 137), which risks interrupting the upgrade. Kavita needed about 80 s. Plex already has one.
+- **Add a `startupProbe`** if the app has a liveness probe (Sonarr and Radarr have no probes at all, so they need none). A restarted app may upgrade its database before it listens. Liveness kills a container that is still starting (exit 137), which risks interrupting the upgrade. Kavita needed about 80 s. Plex already has one.
 - **`latest` image tags move.** The first restart can pull a newer version and migrate the data. That is a separate change from the volume move; pin tags if you want to do them one at a time.
 - **Rollback:** scale to 0, put the inline `iscsi:` block back, scale to 1. The old LUN was never written to.
 - Delete the old LUN and target in DSM only after the app has run happily for a while.
