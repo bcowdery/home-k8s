@@ -16,7 +16,7 @@ metadata:
   name: sonarr-deployment
   namespace: media
 spec:
-  replicas: 0   # migrating the config volume to CSI
+  replicas: 1
   revisionHistoryLimit: 3
   strategy:
     type: Recreate
@@ -54,12 +54,8 @@ spec:
             name: shared-media
       volumes:
         - name: sonarr-data
-          iscsi:
-            targetPortal: "192.168.1.2"
-            iqn: "iqn.2023-12.com.synology:deepthought.sonarr-1"
-            lun: 1
-            fsType: ext4
-            readOnly: false             
+          persistentVolumeClaim:
+            claimName: sonarr-data
         - name: shared-media
           persistentVolumeClaim:
             claimName: shared-media-pvc
