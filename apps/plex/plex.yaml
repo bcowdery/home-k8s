@@ -6,7 +6,7 @@ metadata:
   labels:
     app: plex
 data:
-  TZ: "America/Edmonton"
+  TZ: "America/Halifax"
   ADVERTISE_IP: "http://192.168.1.202:32400/"
   ALLOWED_NETWORKS: "192.168.1.0/24"
 ---
