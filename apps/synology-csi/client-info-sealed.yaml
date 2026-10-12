@@ -1,0 +1,13 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: synology-csi-client-info
+  namespace: synology-csi
+spec:
+  encryptedData:
+    client-info.yaml: AgAjrR6S3O6EtXVgVfhV7dgL03hRGDb6bxyyaBHkAIufHbnfZR0VWKOTYxwP3kaABcgrJzSZO5+cJq3nNDVWxBgN0d3xn62XtRbVlMcWB8GLrOtJ1Db7BWUf5lkWM3jQEKJVT1UfUrhlDmdhpcJaBKFX8USlE30zjAY0cxicGhLfHDlvuS3birsmqgY2PL6tUIjUg7NiX2jLL08gB0ZG0kHi7M8kDMVEuSPhAQMP8Mc9USNutz1DB3ODFk659P3ybBfpi+f0WGm7sfl9JKFiNuKMvRQs4uUnQIkBgdZ6DHgTfLsTQycnAPg+Zf5wwV4Yzv6//gyekMERTRGkeBVIuJ/EdLN8f+uzdr7hLvjLwFfBK5wYodNn7s05rmMubfhxdovo1O3T0qiKFzJVWAr/zMBhIHAVSbBlkJB4FnGmlaNXdCk8yJlvwsyzLK0bK5yTaVxz54IGjLVWVgFVid4JG7hyxhWxV/iybuoqMN3ErMmtzwWQhA+rdKLgTJxS2INpN8JBC6SkGb0TelVuk2LNYMEsgHrsK+auHJyHjhucJb+nOUa+d7dkZvNOKdP49i8jpMA1JGaazSegOOe2U+2I2xqg8cdGAP90rEosje8M2dxSfESP6o/tjDTjG53Rdob7y25dEsSaIRoSrgZIr+C8HfVGXdJxlkVTPeqt7RYaOfMAQelUFjCcJVHa+m3U3bM+PwvIq/EN2s5uNXbtRGLlyLvbazWSN9Q4AkJdf8t7zkg2pjnqJeLYuEvlviE0OypOMrE72n58cDWAKXVwNo2ULRrdygFh2jOZMyGxMs0ZaeLQO4fMegD/7LTv3C7dDQiuDv6eQjRdNQICpqFX0yMXKK7KBb3u0nMKWfi3U0Q1I/wh3tfXmsG4O8WktL+V/8L44LDcHqj/Z1B7sAU7
+  template:
+    metadata:
+      name: synology-csi-client-info
+      namespace: synology-csi

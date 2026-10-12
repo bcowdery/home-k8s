@@ -1,0 +1,8 @@
+# The chart only renders its own snapshot classes when it can see the snapshot CRDs,
+# which it can't when inflated through kustomize, so the class is declared here.
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: synology-csi-snapshot
+driver: csi.san.synology.com
+deletionPolicy: Delete

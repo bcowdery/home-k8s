@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  # DSM credentials. Not in the chart values: the chart reads the Secret named
+  # synology-csi-client-info, which is created from this SealedSecret.
+  # See bootstrap/Readme.md for how it is sealed.
+  - client-info-sealed.yaml
+  - volume-snapshot-class.yaml
+helmCharts:
+  # community chart, the official driver only ships raw manifests
+  - name: synology-csi
+    repo: https://christian-schlichtherle.github.io/synology-csi-chart
+    version: 0.11.4
+    releaseName: synology-csi
+    namespace: synology-csi
+    skipTests: true
+    valuesInline:
+      node:
+        # microk8s keeps the kubelet outside /var/lib/kubelet
+        kubeletPath: /var/snap/microk8s/common/var/lib/kubelet
+      # the chart enables eight classes by default, keep only iSCSI with Retain
+      storageClasses:
+        iscsi-delete:
+          disabled: true
+        iscsi-retain:
+          parameters:
+            fsType: ext4
+            location: /volume1
+        nfs-delete:
+          disabled: true
+        nfs-retain:
+          disabled: true
+        smb-delete:
+          disabled: true
+        smb-retain:
+          disabled: true

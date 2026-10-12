@@ -45,6 +45,30 @@ kubectl apply -f sealed-secrets-key.yaml
 
 Then restart the controller if it was already running: `kubectl -n kube-system rollout restart deploy/sealed-secrets-controller`.
 
+# Sealing the DSM credentials
+
+The synology-csi driver reads its NAS login from a Secret named `synology-csi-client-info` in the `synology-csi` namespace. Seal it and commit the result as `apps/synology-csi/client-info-sealed.yaml`.
+
+Run this in a regular terminal, not through Claude Code's `!` prefix. The password prompt needs a real TTY, and it keeps the password out of shell history and out of any chat transcript.
+
+```shell
+read -rs "P?DSM password for kube-csi: "; echo
+kubectl create secret generic synology-csi-client-info -n synology-csi --dry-run=client -o yaml \
+  --from-literal=client-info.yaml="clients:
+  - host: 192.168.1.2
+    https: true
+    port: 5001
+    username: kube-csi
+    password: $P
+    insecureSkipVerify: true" \
+  | kubeseal --format yaml > apps/synology-csi/client-info-sealed.yaml
+unset P
+```
+
+> **⚠️ Warning:** `insecureSkipVerify: true` is needed because DSM's default certificate has no DNS or IP name in it, so the driver can't verify it. The connection is encrypted, but the driver cannot confirm it reached the real NAS. To fix it properly, create a certificate in DSM with `192.168.1.2` as a SAN, then replace `insecureSkipVerify` with `tlsCACert`.
+
+> **🔒 Security:** Use a dedicated DSM account for the driver, not your personal admin login, and change its password if it has ever been pasted into a chat or a file.
+
 # Sealing a secret
 
 ```shell
