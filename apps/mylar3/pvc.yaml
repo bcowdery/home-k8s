@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mylar-data
+  namespace: media
+  labels:
+    app: mylar
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 2Gi
