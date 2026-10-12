@@ -5,3 +5,7 @@ pre-upgrade*.yaml
 
 # helm charts that `kustomize --enable-helm` downloads while rendering locally
 apps/*/charts/
+
+# local network gateway config, copied here for reference only
+config.gateway.json
+config.gateway.json.*

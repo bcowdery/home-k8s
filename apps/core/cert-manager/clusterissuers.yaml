@@ -1,0 +1,48 @@
+# Let's Encrypt via DNS-01 and acme-dns. Names are internal-only, so HTTP-01 is not an option.
+# Hover (the DNS host) has no API. Instead, one CNAME there
+#   _acme-challenge.home.pointyspoon.com  ->  <uuid>.auth.acme-dns.io
+# lets cert-manager answer challenges through the acme-dns account in the sealed Secret.
+# Always try staging first: production has strict rate limits.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - selector:
+          dnsZones:
+            - home.pointyspoon.com
+        dns01:
+          acmeDNS:
+            host: https://auth.acme-dns.io
+            accountSecretRef:
+              name: acme-dns
+              key: acmedns.json
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - selector:
+          dnsZones:
+            - home.pointyspoon.com
+        dns01:
+          acmeDNS:
+            host: https://auth.acme-dns.io
+            accountSecretRef:
+              name: acme-dns
+              key: acmedns.json
