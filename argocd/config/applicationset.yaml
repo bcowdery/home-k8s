@@ -33,7 +33,9 @@ spec:
         path: '{{ .path.path }}'
       destination:
         server: https://kubernetes.default.svc
-        # namespaces are set on the resources themselves
+        # core spans many namespaces, so its resources carry their own. media is pinned to one, which
+        # is also what its project allows.
+        namespace: '{{ if eq (index .path.segments 1) "media" }}media{{ end }}'
       syncPolicy:
         automated:
           prune: true      # git is authoritative; Namespaces and volume claims opt out with Prune=false
