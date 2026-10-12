@@ -5,36 +5,15 @@ resources:
 helmCharts:
   - name: intel-device-plugins-operator
     repo: https://intel.github.io/helm-charts/
-    version: 0.28.0
+    version: 0.37.1
     releaseName: dp-operator
     namespace: inteldeviceplugins-system
     includeCRDs: true
   - name: intel-device-plugins-gpu
     repo: https://intel.github.io/helm-charts/
-    version: 0.28.0
+    version: 0.37.1
     releaseName: gpu
     namespace: inteldeviceplugins-system
     includeCRDs: true
     valuesInline:
       nodeFeatureRule: true
-# Chart 0.28.0 renders fields the live objects never kept, so Argo CD sees permanent drift:
-# - `labels: null` on three NodeFeatureRule rules, which server-side apply also rejects
-# - `resourceManager: false` on the GpuDevicePlugin
-# The API server dropped them when Helm first applied the chart.
-patches:
-  - target:
-      kind: NodeFeatureRule
-      name: intel-gpu-platform-labeling
-    patch: |-
-      - op: remove
-        path: /spec/rules/1/labels
-      - op: remove
-        path: /spec/rules/2/labels
-      - op: remove
-        path: /spec/rules/3/labels
-  - target:
-      kind: GpuDevicePlugin
-      name: gpudeviceplugin-sample
-    patch: |-
-      - op: remove
-        path: /spec/resourceManager
