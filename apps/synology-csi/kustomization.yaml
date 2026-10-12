@@ -10,7 +10,8 @@ helmCharts:
   # community chart, the official driver only ships raw manifests
   - name: synology-csi
     repo: https://christian-schlichtherle.github.io/synology-csi-chart
-    version: 0.11.4
+    # 0.11.4 targets driver v1.4.0, which is not on Docker Hub yet (newest published is v1.3.1)
+    version: 0.11.3
     releaseName: synology-csi
     namespace: synology-csi
     skipTests: true
