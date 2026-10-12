@@ -5,34 +5,57 @@ resources:
 helmCharts:
   - name: node-feature-discovery
     repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
-    version: 0.12.1
+    version: 0.19.0
     releaseName: nfd
     namespace: node-feature-discovery
-    # live CRDs are newer than this chart's (an earlier install left them), so don't manage them here
-    includeCRDs: false
+    includeCRDs: true
     valuesInline:
       master:
         extraLabelNs:
           - gpu.intel.com
           - sgx.intel.com
-        resourceLabels:
-          - gpu.intel.com/millicores
-          - gpu.intel.com/memory.max
-          - gpu.intel.com/tiles
-          - sgx.intel.com/epc
-# chart 0.12.1 leaves the worker Role and RoleBinding without a namespace
+        # The old `resourceLabels` value is gone: extended resources from NodeFeatureRules are on by default.
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: core
 patches:
+  # The chart ships `nfd-master -prune` as a post-delete Helm hook, which strips NFD's labels from the
+  # nodes. Rendered through kustomize it would be a plain Job, and running it would remove the
+  # intel.feature.node.kubernetes.io/gpu label that the Intel GPU plugin's nodeSelector needs.
   - target:
-      kind: Role
-      name: nfd-node-feature-discovery-worker
+      kind: Job
+      name: nfd-node-feature-discovery-prune
     patch: |-
-      - op: add
-        path: /metadata/namespace
-        value: node-feature-discovery
+      $patch: delete
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: nfd-node-feature-discovery-prune
+  # ...and the ServiceAccount and RBAC that only that Job used
   - target:
-      kind: RoleBinding
-      name: nfd-node-feature-discovery-worker
+      kind: ServiceAccount
+      name: nfd-node-feature-discovery-prune
     patch: |-
-      - op: add
-        path: /metadata/namespace
-        value: node-feature-discovery
+      $patch: delete
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: nfd-node-feature-discovery-prune
+  - target:
+      kind: ClusterRole
+      name: nfd-node-feature-discovery-prune
+    patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: nfd-node-feature-discovery-prune
+  - target:
+      kind: ClusterRoleBinding
+      name: nfd-node-feature-discovery-prune
+    patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: nfd-node-feature-discovery-prune
