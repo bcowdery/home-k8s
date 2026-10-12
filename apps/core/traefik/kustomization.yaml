@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - middleware.yaml
+  - certificate.yaml
 helmCharts:
   # The main chart bundles 25 CRDs, 15 of them for Traefik Hub (a commercial product). The separate
   # CRD chart ships only the 10 traefik.io ones (hub, Gateway API and knative are off by default).
@@ -35,6 +36,11 @@ helmCharts:
           http:
             middlewares:
               - traefik-lan-only@kubernetescrd
+      # serve the wildcard certificate for every host that has no certificate of its own
+      tlsStore:
+        default:
+          defaultCertificate:
+            secretName: wildcard-home-tls
       service:
         annotations:
           metallb.io/loadBalancerIPs: 192.168.1.209
