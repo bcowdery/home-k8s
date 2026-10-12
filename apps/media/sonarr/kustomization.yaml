@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - sonarr.yaml
   - pvc.yaml
+  - ingress.yaml
 # metadata only: labels are not added to selectors or pod templates, so nothing restarts
 labels:
   - pairs:
