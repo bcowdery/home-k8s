@@ -1,7 +1,7 @@
 # One wildcard certificate for every hostname under home.pointyspoon.com, served by Traefik as its
 # default (see tlsStore in kustomization.yaml). A wildcard also keeps the individual hostnames
 # out of the public certificate-transparency logs.
-# Start on staging; switch issuerRef to letsencrypt-prod once staging has issued.
+# Proven on staging first; production issuer from 2026-10-12.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -12,7 +12,7 @@ metadata:
 spec:
   secretName: wildcard-home-tls
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
     - "*.home.pointyspoon.com"
