@@ -58,10 +58,10 @@ Pinned versions (verified against the chart repositories, 2026-10-12):
 | Sealed Secrets | `https://bitnami.github.io/sealed-secrets` | 2.20.0 (controller 0.40.0) |
 | synology-csi | community chart, `christian-schlichtherle/synology-csi-chart` | 0.11.3 (driver v1.3.1). 0.11.4 targets v1.4.0, which is not on Docker Hub yet |
 | external-snapshotter | `kubernetes-csi/external-snapshotter` | v8.6.0 |
-| MetalLB | raw manifest | v0.13.5 (unchanged) |
-| cert-manager | `jetstack/cert-manager` | v1.13.3 (unchanged) |
-| NFD | `node-feature-discovery` | 0.12.1 (unchanged) |
-| Intel operator and GPU plugin | `intel-device-plugins-*` | 0.28.0 (unchanged) |
+| MetalLB | raw manifest | v0.16.0 (native BGP; upgraded from v0.13.5 via v0.14.9) |
+| cert-manager | `jetstack/cert-manager` | v1.13.3 (unchanged; see docs/upgrading-core-components.md) |
+| NFD | `node-feature-discovery` | 0.19.0 (upgraded from 0.12.1) |
+| Intel operator and GPU plugin | `intel-device-plugins-*` | 0.37.1 (upgraded from 0.28.0) |
 
 Adoption notes, from comparing each rendered app to the live cluster with a server-side `kubectl diff`:
 
