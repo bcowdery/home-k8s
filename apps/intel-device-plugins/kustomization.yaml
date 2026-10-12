@@ -17,8 +17,10 @@ helmCharts:
     includeCRDs: true
     valuesInline:
       nodeFeatureRule: true
-# the chart renders `labels: null` on three rules, which server-side apply rejects.
-# The API server dropped those nulls when Helm first applied them, so live has no key.
+# Chart 0.28.0 renders fields the live objects never kept, so Argo CD sees permanent drift:
+# - `labels: null` on three NodeFeatureRule rules, which server-side apply also rejects
+# - `resourceManager: false` on the GpuDevicePlugin
+# The API server dropped them when Helm first applied the chart.
 patches:
   - target:
       kind: NodeFeatureRule
@@ -30,3 +32,9 @@ patches:
         path: /spec/rules/2/labels
       - op: remove
         path: /spec/rules/3/labels
+  - target:
+      kind: GpuDevicePlugin
+      name: gpudeviceplugin-sample
+    patch: |-
+      - op: remove
+        path: /spec/resourceManager
