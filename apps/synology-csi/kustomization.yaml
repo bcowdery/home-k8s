@@ -2,9 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
-  # DSM credentials. Not in the chart values: the chart reads the Secret named
-  # synology-csi-client-info, which is created from this SealedSecret.
-  # See bootstrap/Readme.md for how it is sealed.
+  # DSM credentials. The chart reads the Secret named synology-csi-client-info, which is
+  # created from this SealedSecret. See bootstrap/Readme.md for how it is sealed.
   - client-info-sealed.yaml
   - volume-snapshot-class.yaml
 helmCharts:
@@ -15,10 +14,20 @@ helmCharts:
     releaseName: synology-csi
     namespace: synology-csi
     skipTests: true
+    # the chart adds the snapshotter and snapshot classes only when it can see this API,
+    # which depends on who renders it. Pin it so every renderer produces the same output.
+    apiVersions:
+      - snapshot.storage.k8s.io/v1/VolumeSnapshotClass
     valuesInline:
       node:
         # microk8s keeps the kubelet outside /var/lib/kubelet
         kubeletPath: /var/snap/microk8s/common/var/lib/kubelet
+      # the chart's own snapshot classes are off; volume-snapshot-class.yaml declares the one we use
+      volumeSnapshotClasses:
+        delete:
+          disabled: true
+        retain:
+          disabled: true
       # the chart enables eight classes by default, keep only iSCSI with Retain
       storageClasses:
         iscsi-delete:
@@ -35,3 +44,24 @@ helmCharts:
           disabled: true
         smb-retain:
           disabled: true
+# kustomize's `namespace:` transformer skips Helm-inflated objects, and the chart leaves these
+# without a namespace, so set it explicitly
+patches:
+  - target:
+      kind: ServiceAccount
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: synology-csi
+  - target:
+      kind: StatefulSet
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: synology-csi
+  - target:
+      kind: DaemonSet
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: synology-csi
