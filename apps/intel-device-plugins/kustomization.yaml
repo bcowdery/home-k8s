@@ -17,3 +17,16 @@ helmCharts:
     includeCRDs: true
     valuesInline:
       nodeFeatureRule: true
+# the chart renders `labels: null` on three rules, which server-side apply rejects.
+# The API server dropped those nulls when Helm first applied them, so live has no key.
+patches:
+  - target:
+      kind: NodeFeatureRule
+      name: intel-gpu-platform-labeling
+    patch: |-
+      - op: remove
+        path: /spec/rules/1/labels
+      - op: remove
+        path: /spec/rules/2/labels
+      - op: remove
+        path: /spec/rules/3/labels
