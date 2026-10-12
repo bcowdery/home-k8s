@@ -130,7 +130,7 @@ metadata:
   name: plex-udp
   namespace: media
   annotations:
-    metallb.universe.tf/allow-shared-ip: "plex-svc"
+    metallb.io/allow-shared-ip: "plex-svc"
   labels:
     app: plex
 spec:
@@ -167,7 +167,7 @@ metadata:
   name: plex-tcp
   namespace: media
   annotations:
-      metallb.universe.tf/allow-shared-ip: "plex-svc"
+      metallb.io/allow-shared-ip: "plex-svc"
   labels:
     app: plex
 spec:
