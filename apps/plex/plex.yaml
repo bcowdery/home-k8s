@@ -16,7 +16,7 @@ metadata:
   name: plex-deployment
   namespace: media
 spec:
-  replicas: 0   # migrating the config volume to CSI
+  replicas: 1
   revisionHistoryLimit: 3
   strategy:
     type: Recreate
