@@ -22,9 +22,8 @@ Each was its own commit, so any step is a `git revert`.
 - **Argo CD does not track CRDs**, so prune never deletes a CRD that a new chart version drops. Delete those by hand, after confirming they have no objects.
 - **Resources can be renamed upstream.** The Intel plugin's `gpu.intel.com/i915_monitoring` became `gpu.intel.com/monitoring`. Plex uses `gpu.intel.com/i915`, which did not change.
 - **LoadBalancer IPs drop for about 15 to 30 seconds per MetalLB hop** while the speaker restarts. Nothing else is affected, but in-flight Plex streams end.
-- **The MetalLB speaker still holds a stale `METALLB_ML_SECRET_KEY` env var** next to the new `METALLB_ML_SECRET_KEY_PATH`. Both reference the same secret. It disappears the next time the DaemonSet is recreated.
+- **Going through an intermediate version avoids stale fields.** A dry-run straight from MetalLB v0.13.5 to v0.16.0 showed a leftover `METALLB_ML_SECRET_KEY` env var in the merged speaker, because Helm-era (client-side) field ownership survives a server-side apply. Doing it as v0.13.5 to v0.14.9 to v0.16.0 meant the first hop made Argo CD the owner of those fields, so the second hop removed them cleanly. The v0.16.0 commit message says the var would linger; it did not.
 
 ## Still outstanding
 
 - cert-manager is on v1.13.3. Its only job is the Intel operator's webhook certificate, which works, but v1.13 supports Kubernetes 1.25 to 1.28 and the cluster is on 1.33.
-- The Plex Services still use the deprecated `metallb.universe.tf/allow-shared-ip` annotation. It works, and `metallb.io/allow-shared-ip` is the replacement.
