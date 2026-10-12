@@ -5,12 +5,15 @@ resources:
 helmCharts:
   - name: cert-manager
     repo: https://charts.jetstack.io
-    version: v1.13.3
+    version: v1.21.2
     releaseName: cert-manager
     namespace: cert-manager
     includeCRDs: true
     valuesInline:
-      installCRDs: true
+      # replaces the deprecated installCRDs
+      crds:
+        enabled: true
+        keep: true
       # helm post-install hook, already ran once and was cleaned up by helm
       startupapicheck:
         enabled: false
