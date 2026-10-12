@@ -18,7 +18,7 @@ metadata:
   name: kavita-deployment
   namespace: media
 spec:
-  replicas: 1
+  replicas: 0   # parked, set to 1 to run
   revisionHistoryLimit: 3
   strategy:
     type: Recreate

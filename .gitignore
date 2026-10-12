@@ -1,0 +1,4 @@
+# Cluster backups and state exports (contain secrets)
+backup*.tar
+pre-upgrade*.yaml
+*.kubeconfig
