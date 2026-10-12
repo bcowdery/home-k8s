@@ -50,6 +50,13 @@ spec:
             - name: http-web
               protocol: TCP
               containerPort: 5000
+          # liveness and readiness only start once this passes, so a slow first start
+          # (database upgrade) is not killed halfway through
+          startupProbe:
+            tcpSocket:
+              port: http-web
+            failureThreshold: 60    # 10s x 60 = 10min
+            periodSeconds: 10
           readinessProbe:
             tcpSocket:
               port: http-web
