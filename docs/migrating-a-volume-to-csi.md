@@ -52,6 +52,8 @@ The old LUN is only ever mounted read-only, so it stays intact as the fallback.
 
 ## Gotchas
 
+- **Large new volumes can fail their first mount.** The first mount formats the LUN with `mkfs.ext4`, and the kubelet cancels the mount call after about two minutes. When it does, the driver logs out of the iSCSI session, which pulls the disk out from under `mkfs`, and the next attempt starts the format over. 10 GiB volumes finish inside the window; a 50 GiB one never did (Plex, 2026-10-12), and the NAS showed the thin LUN filling to 49 GB without ever finishing. Untested ideas: start small (10Gi) and grow it online, or format the LUN by hand on the node first so the driver finds an existing filesystem.
+- **Removing a CSI volume:** set the PV's `persistentVolumeReclaimPolicy` to `Delete` and then delete the PVC. The driver removes the LUN and target on the NAS itself.
 - **Add a `startupProbe`** if the app has a liveness probe (Sonarr and Radarr have no probes at all, so they need none). A restarted app may upgrade its database before it listens. Liveness kills a container that is still starting (exit 137), which risks interrupting the upgrade. Kavita needed about 80 s. Plex already has one.
 - **`latest` image tags move.** The first restart can pull a newer version and migrate the data. That is a separate change from the volume move; pin tags if you want to do them one at a time.
 - **Rollback:** scale to 0, put the inline `iscsi:` block back, scale to 1. The old LUN was never written to.

@@ -85,9 +85,9 @@ Adoption notes, from comparing each rendered app to the live cluster with a serv
 
 Verified on 2026-10-12 with Kavita and Mylar3: provisioning (PVC `Bound` in about 3 seconds), mount (ext4, read-write) and online expansion all work.
 
-> **📌 Important:** CSI volumes are never smaller than 10Gi (thin LUNs make this free, and it avoids the DSM UI's 10 GB minimum). Kavita, Mylar3, NZBGet, Sonarr and Radarr now run on CSI volumes, migrated with `docs/migrating-a-volume-to-csi.md`. Plex is the one remaining app on a hand-made LUN.
+> **📌 Important:** CSI volumes are never smaller than 10Gi (thin LUNs make this free, and it avoids the DSM UI's 10 GB minimum). Kavita, Mylar3, NZBGet, Sonarr and Radarr now run on CSI volumes, migrated with `docs/migrating-a-volume-to-csi.md`. Plex is the one remaining app on a hand-made LUN: a 50 GiB CSI volume never finished its first format inside the kubelet's mount timeout (see the gotchas in the runbook), so Plex was rolled back and its CSI volume removed. Revisit later; it is not a blocker.
 
-> **💡 Note:** Migrating Plex to a CSI-provisioned volume is optional: scale down, `rsync` the config into a new PVC, switch the volume. It would give thin LUNs, snapshots and git-driven resizing.
+> **💡 Note:** Migrating Plex to a CSI-provisioned volume is optional and was attempted once (see above): scale down, `rsync` the config into a new PVC, switch the volume. It would give thin LUNs, snapshots and git-driven resizing.
 
 Existing LUNs, from the DSM API (`SYNO.Core.ISCSI.LUN` list). The DSM UI does not show UUIDs.
 
