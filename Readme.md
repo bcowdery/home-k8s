@@ -27,6 +27,7 @@ Every directory under `apps/core/` and `apps/media/` becomes an Argo CD Applicat
 | core    | `nfd`                    | Node Feature Discovery, labels the Intel GPU          | `node-feature-discovery`    |
 | core    | `intel-device-plugins`   | Operator and GPU plugin for Plex hardware transcoding | `inteldeviceplugins-system` |
 | core    | `synology-csi`           | Provisions iSCSI volumes on the Synology NAS          | `synology-csi`              |
+| core    | `traefik`                | Ingress controller, wildcard certificate, LAN-only    | `traefik`                   |
 | media   | `media-shared`           | `media` namespace, shared NFS media volume            | `media`                     |
 | media   | `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3` | Media applications        | `media`                     |
 
@@ -74,23 +75,43 @@ Then follow [bootstrap/Readme.md](bootstrap/Readme.md).
 
 > **💥 DANGER:** Restarting containerd or the node can drop the iSCSI sessions. The LUNs then return under new `/dev/sdX` names while running containers keep mounts bound to the dead ones. Pods stay `Running`, but `/config` returns `Input/output error` or goes read-only. Before node maintenance, scale the iSCSI-backed apps to 0, wait for `sudo iscsiadm -m session` to show no sessions for them, then scale back up and test `touch /config/.rwtest` in each pod.
 
-# Services
+# Services and addresses
 
-Home media servers, download agents and supporting software, in the `media` namespace.
+Web UIs are served by one ingress ([Traefik](https://traefik.io/)) under `*.home.pointyspoon.com` with a Let's Encrypt wildcard certificate. They are reachable from the home network only. See [docs/ingress.md](docs/ingress.md) for how it works and what to do when it breaks.
 
-| Service  | Description                  | Kubernetes service      | Address                         |
-|:---------|:-----------------------------|:------------------------|:--------------------------------|
-| Plex     | Plex media server            | `plex-tcp`, `plex-udp`  | http://192.168.1.203:32400/web  |
-| NZBGet   | NZB download service         | `nzbget-tcp`            | http://192.168.1.203:6789       |
-| Sonarr   | TV show download manager     | `sonarr-tcp`            | http://192.168.1.204:8989       |
-| Radarr   | Movie download manager       | `radarr-tcp`            | http://192.168.1.205:7878       |
-| Kavita   | Comics and ebook library     | `kavita-tcp`            | http://192.168.1.206:5000       |
-| Mylar3   | Comic download manager       | `mylar-tcp`             | http://192.168.1.207:8090       |
-| Argo CD  | GitOps controller (`argocd`) | `argocd-server`         | https://192.168.1.202           |
+| Service  | Description              | URL                                         | Notes                                   |
+|:---------|:-------------------------|:--------------------------------------------|:----------------------------------------|
+| Sonarr   | TV show download manager | https://sonarr.home.pointyspoon.com         |                                         |
+| Radarr   | Movie download manager   | https://radarr.home.pointyspoon.com         |                                         |
+| NZBGet   | NZB download service     | https://nzbget.home.pointyspoon.com         |                                         |
+| Kavita   | Comics and ebook library | https://kavita.home.pointyspoon.com         |                                         |
+| Mylar3   | Comic download manager   | https://mylar.home.pointyspoon.com          | parked (`replicas: 0`)                  |
+| Argo CD  | GitOps controller        | https://argocd.home.pointyspoon.com         | also https://192.168.1.202 (see below)  |
+| Plex     | Plex media server        | http://192.168.1.203:32400/web              | own IP, needed for discovery            |
 
-Kavita and Mylar3 are parked (`replicas: 0`). Set `replicas: 1` in their manifests to run them.
+LoadBalancer IPs (MetalLB pool `192.168.1.201-254`, outside the DHCP range):
 
-> **💡 Note:** Internal DNS for media services is `<service_name>.media.svc.cluster.local`.
+| IP              | What                                                                                  |
+|:----------------|:--------------------------------------------------------------------------------------|
+| `192.168.1.201` | Traefik, the ingress for every hostname above                                         |
+| `192.168.1.202` | Argo CD directly. Kept as a path that does not depend on Traefik, DNS or the certificate |
+| `192.168.1.203` | Plex. Plex's discovery (GDM, DLNA, mDNS) wants its own address                        |
+
+> **💡 Note:** Inside the cluster, apps still reach each other by Service name, for example Sonarr and Radarr use `nzbget-tcp.media.svc.cluster.local` and `plex-tcp.media.svc.cluster.local`. Those Service names must not change.
+
+> **🧠 Pro-tip:** If Traefik or DNS is broken, `kubectl port-forward -n media svc/sonarr-tcp 8989` reaches any app using nothing but `kubectl`.
+
+## Name resolution
+
+Clients use the NAS (`192.168.1.2`) as their DNS server, and it forwards to the UniFi gateway. The gateway holds the names as `static-host-mapping` entries in `config.gateway.json` on the UniFi controller (a copy sits in the repo root but is git-ignored, since it describes the network). Entries to keep:
+
+| Name                              | Address         |
+|:----------------------------------|:----------------|
+| `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar`, `argocd` `.home.pointyspoon.com` | `192.168.1.201` |
+| `argo.lan` (alias `argo`, `argocd`) | `192.168.1.202` |
+| `plex.lan` (alias `plex`)         | `192.168.1.203` |
+
+> **⚠️ Warning:** UniFi only applies changes to `config.gateway.json` when the gateway is re-provisioned, and recent versions removed the Force Provision button. Changing any trivial device setting (toggling the device LED works) triggers a provision. The gateway's DNS restarts for about a minute afterwards.
 
 # Ubiquiti Security Gateway
 

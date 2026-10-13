@@ -197,6 +197,19 @@ Next:
 10. Remove the stale Helm release records for cert-manager, NFD, dp-operator and gpu (never `helm uninstall` them).
 11. Later, one at a time through git: bump NFD, then the Intel plugins and cert-manager, then MetalLB. Ubuntu 24.04 is a separate project.
 
+## Ingress and certificates (2026-10-12)
+
+Decided and built after the GitOps and CSI work; see `docs/ingress.md` for how it works.
+
+| Topic | Decision |
+|:--|:--|
+| Controller | Traefik v3.7. ingress-nginx was ruled out: it is archived and retired as of March 2026. |
+| Names | `<app>.home.pointyspoon.com`, resolved by the UniFi gateway (the NAS forwards to it). Public DNS stays at Hover; only one `_acme-challenge` CNAME lives there. |
+| Certificates | One Let's Encrypt wildcard via cert-manager DNS-01 and the public acme-dns service (Hover has no API). Staging first, then production. |
+| Exposure | Internal only: nothing is port-forwarded, and Traefik allows only `192.168.0.0/16`. |
+| Addresses | `192.168.1.201` Traefik, `.202` Argo CD (independent path), `.203` Plex. The media apps' own LoadBalancer IPs were retired. |
+| Retired | The old microk8s Kubernetes dashboard (v2.7.0). |
+
 ## Findings from the live cluster (2026-10-12)
 
 - Helm releases: cert-manager v1.13.3, NFD 0.12.1, Intel operator and GPU plugin 0.28.0, Pinned to these, not the versions in the old README.
