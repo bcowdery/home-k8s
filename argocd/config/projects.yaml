@@ -1,6 +1,8 @@
 # Argo CD projects. An app's project is the folder it lives in under apps/ (see applicationset.yaml).
 #
 # core:  cluster plumbing, trusted and unrestricted.
+# home:  Home Assistant and its voice services. Same restrictions as media, for the home-assistant
+#        namespace.
 # media: the media apps. May only deploy into the media namespace, and only create
 #        Namespaces and PersistentVolumes at cluster scope, so a media app cannot touch
 #        RBAC, CRDs or other namespaces.
@@ -41,3 +43,22 @@ spec:
       kind: Namespace
     - group: ''
       kind: PersistentVolume
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: home
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Home Assistant and the voice services it uses
+  sourceRepos:
+    - https://github.com/bcowdery/home-k8s.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: home-assistant
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace

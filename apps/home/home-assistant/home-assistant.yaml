@@ -1,0 +1,149 @@
+# Home Assistant Container. Runs on the node's own network (hostNetwork) because device discovery
+# (mDNS, SSDP, DHCP) is broadcast based and does not cross the pod network. It is not privileged:
+# nothing needs Bluetooth on the host yet.
+#
+# Voice: Whisper (speech to text) and Piper (text to speech) are separate Wyoming services in this
+# namespace. In Home Assistant add the Wyoming Protocol integration twice, with the hosts
+#   whisper.home-assistant.svc.cluster.local  port 10300
+#   piper.home-assistant.svc.cluster.local     port 10200
+# Claude is the Anthropic integration; its API key is entered in the UI and stays on the config volume.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-assistant-config
+  namespace: home-assistant
+  labels:
+    app: home-assistant
+data:
+  configuration.yaml: |
+    # Managed in git (apps/home/home-assistant). Automations, scripts and scenes built in the UI
+    # are stored in the matching files on the config volume.
+    default_config:
+
+    # Traefik terminates TLS in front of Home Assistant. Without this Home Assistant rejects
+    # proxied requests with a 400. 10.1.0.0/16 is the pod network, where Traefik runs.
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 10.1.0.0/16
+        - 192.168.1.4
+
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-assistant-data
+  namespace: home-assistant
+  labels:
+    app: home-assistant
+  annotations:
+    # never let Argo CD delete a volume claim if its manifest is removed from git
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 10Gi   # config, integrations, and the recorder database (including solar history later)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+    spec:
+      hostNetwork: true
+      # with hostNetwork the default is the node's DNS; this keeps cluster names (whisper, piper) resolvable
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+        # configuration.yaml includes these files, and Home Assistant does not create them for us
+        - name: init-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              [ -f /config/automations.yaml ] || echo '[]' > /config/automations.yaml
+              [ -f /config/scenes.yaml ] || echo '[]' > /config/scenes.yaml
+              [ -f /config/scripts.yaml ] || echo '{}' > /config/scripts.yaml
+          volumeMounts:
+            - name: data
+              mountPath: /config
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-assistant/home-assistant:2026.10.1
+          env:
+            - name: TZ
+              value: America/Halifax
+          ports:
+            - name: http
+              containerPort: 8123
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 60    # 10s x 60 = 10min, the first start sets up the database
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /config
+            - name: configuration
+              mountPath: /config/configuration.yaml
+              subPath: configuration.yaml
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: home-assistant-data
+        - name: configuration
+          configMap:
+            name: home-assistant-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+  labels:
+    app: home-assistant
+spec:
+  type: ClusterIP
+  selector:
+    app: home-assistant
+  ports:
+    - name: http
+      port: 8123
+      targetPort: http

@@ -1,0 +1,90 @@
+# Wyoming text-to-speech server for Home Assistant's Assist pipeline.
+# Home Assistant reaches it at piper.home-assistant.svc.cluster.local:10200.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: piper-data
+  namespace: home-assistant
+  labels:
+    app: piper
+  annotations:
+    # never let Argo CD delete a volume claim if its manifest is removed from git
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 10Gi   # voices are downloaded here once, then loaded from disk
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: piper
+  namespace: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: piper
+  template:
+    metadata:
+      labels:
+        app: piper
+    spec:
+      containers:
+        - name: piper
+          image: rhasspy/wyoming-piper:2.5.2
+          args:
+            - --voice
+            - en_US-lessac-medium
+            - --uri
+            - tcp://0.0.0.0:10200
+            - --data-dir
+            - /data
+            - --download-dir
+            - /data
+          ports:
+            - name: wyoming
+              containerPort: 10200
+          startupProbe:
+            tcpSocket:
+              port: wyoming
+            failureThreshold: 60    # 10s x 60 = 10min, the first start downloads the voice
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: wyoming
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: piper-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: piper
+  namespace: home-assistant
+  labels:
+    app: piper
+spec:
+  type: ClusterIP
+  selector:
+    app: piper
+  ports:
+    - name: wyoming
+      port: 10200
+      targetPort: wyoming

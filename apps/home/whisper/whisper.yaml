@@ -1,0 +1,98 @@
+# Wyoming speech-to-text server for Home Assistant's Assist pipeline.
+# Runs on the CPU. Home Assistant reaches it at whisper.home-assistant.svc.cluster.local:10300.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whisper-data
+  namespace: home-assistant
+  labels:
+    app: whisper
+  annotations:
+    # never let Argo CD delete a volume claim if its manifest is removed from git
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 10Gi   # models are downloaded here once, then loaded from disk
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whisper
+  namespace: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: whisper
+  template:
+    metadata:
+      labels:
+        app: whisper
+    spec:
+      containers:
+        - name: whisper
+          image: rhasspy/wyoming-whisper:3.8.1
+          args:
+            - --model
+            - small.en           # English only: more accurate and faster than the multilingual small
+            - --language
+            - en
+            - --device
+            - cpu
+            - --compute-type
+            - int8               # fastest on a CPU
+            - --beam-size
+            - "1"                # greedy decoding, lowest latency for short voice commands
+            - --uri
+            - tcp://0.0.0.0:10300
+            - --data-dir
+            - /data
+            - --download-dir
+            - /data
+          ports:
+            - name: wyoming
+              containerPort: 10300
+          startupProbe:
+            tcpSocket:
+              port: wyoming
+            failureThreshold: 60    # 10s x 60 = 10min, the first start downloads the model
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: wyoming
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: whisper-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whisper
+  namespace: home-assistant
+  labels:
+    app: whisper
+spec:
+  type: ClusterIP
+  selector:
+    app: whisper
+  ports:
+    - name: wyoming
+      port: 10300
+      targetPort: wyoming

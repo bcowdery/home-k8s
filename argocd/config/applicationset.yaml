@@ -1,4 +1,4 @@
-# One Argo CD Application per directory under apps/core and apps/media.
+# One Argo CD Application per directory under apps/core, apps/media and apps/home.
 # The folder name is the Argo CD project, so adding apps/media/foo with a
 # kustomization.yaml creates the Application "foo" in the "media" project.
 apiVersion: argoproj.io/v1alpha1
@@ -20,6 +20,7 @@ spec:
         directories:
           - path: apps/core/*
           - path: apps/media/*
+          - path: apps/home/*
   template:
     metadata:
       name: '{{ .path.basename }}'
@@ -33,9 +34,9 @@ spec:
         path: '{{ .path.path }}'
       destination:
         server: https://kubernetes.default.svc
-        # core spans many namespaces, so its resources carry their own. media is pinned to one, which
-        # is also what its project allows.
-        namespace: '{{ if eq (index .path.segments 1) "media" }}media{{ end }}'
+        # core spans many namespaces, so its resources carry their own. media and home are each pinned to
+        # one namespace, which is also all their projects allow.
+        namespace: '{{ if eq (index .path.segments 1) "media" }}media{{ else if eq (index .path.segments 1) "home" }}home-assistant{{ end }}'
       syncPolicy:
         automated:
           prune: true      # git is authoritative; Namespaces and volume claims opt out with Prune=false
