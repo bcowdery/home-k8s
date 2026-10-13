@@ -26,6 +26,6 @@ echo "==> Handing argocd/config (projects and the ApplicationSet) over to Argo C
 kubectl apply -f argocd/root-app.yaml
 
 echo
-echo "Done. Argo CD UI: https://192.168.1.208 (user: admin)"
+echo "Done. Argo CD UI: https://192.168.1.202 (user: admin)"
 echo "Initial admin password:"
 echo "  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo"

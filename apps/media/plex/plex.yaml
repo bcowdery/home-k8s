@@ -7,7 +7,7 @@ metadata:
     app: plex
 data:
   TZ: "America/Halifax"
-  ADVERTISE_IP: "http://192.168.1.202:32400/"
+  ADVERTISE_IP: "http://192.168.1.203:32400/"
   ALLOWED_NETWORKS: "192.168.1.0/24"
 ---
 apiVersion: apps/v1
@@ -28,6 +28,10 @@ spec:
       labels:
         app: plex
       namespace: media
+      annotations:
+        # ConfigMap changes do not restart pods. Plex rewrites its saved address from ADVERTISE_IP at
+        # start, so change this value whenever plex-config changes.
+        config-revision: "advertise-ip-203"
     spec:
       restartPolicy: Always
       containers:
@@ -135,7 +139,7 @@ metadata:
     app: plex
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.202
+  loadBalancerIP: 192.168.1.203
   externalTrafficPolicy: Local
   ports:
     - name: dnla-udp
@@ -172,7 +176,7 @@ metadata:
     app: plex
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.202
+  loadBalancerIP: 192.168.1.203
   externalTrafficPolicy: Local
   ports:
     - name: http

@@ -43,7 +43,7 @@ helmCharts:
             secretName: wildcard-home-tls
       service:
         annotations:
-          metallb.io/loadBalancerIPs: 192.168.1.209
+          metallb.io/loadBalancerIPs: 192.168.1.201
         spec:
           # keeps the client's real source address, which the allowlist needs
           externalTrafficPolicy: Local

@@ -80,13 +80,13 @@ Home media servers, download agents and supporting software, in the `media` name
 
 | Service  | Description                  | Kubernetes service      | Address                         |
 |:---------|:-----------------------------|:------------------------|:--------------------------------|
-| Plex     | Plex media server            | `plex-tcp`, `plex-udp`  | http://192.168.1.202:32400/web  |
+| Plex     | Plex media server            | `plex-tcp`, `plex-udp`  | http://192.168.1.203:32400/web  |
 | NZBGet   | NZB download service         | `nzbget-tcp`            | http://192.168.1.203:6789       |
 | Sonarr   | TV show download manager     | `sonarr-tcp`            | http://192.168.1.204:8989       |
 | Radarr   | Movie download manager       | `radarr-tcp`            | http://192.168.1.205:7878       |
 | Kavita   | Comics and ebook library     | `kavita-tcp`            | http://192.168.1.206:5000       |
 | Mylar3   | Comic download manager       | `mylar-tcp`             | http://192.168.1.207:8090       |
-| Argo CD  | GitOps controller (`argocd`) | `argocd-server`         | https://192.168.1.208           |
+| Argo CD  | GitOps controller (`argocd`) | `argocd-server`         | https://192.168.1.202           |
 
 Kavita and Mylar3 are parked (`replicas: 0`). Set `replicas: 1` in their manifests to run them.
 
