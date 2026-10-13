@@ -20,13 +20,9 @@ data:
     # are stored in the matching files on the config volume.
     default_config:
 
-    # Traefik terminates TLS in front of Home Assistant. Without this Home Assistant rejects
-    # proxied requests with a 400. 10.1.0.0/16 is the pod network, where Traefik runs.
-    http:
-      use_x_forwarded_for: true
-      trusted_proxies:
-        - 10.1.0.0/16
-        - 192.168.1.4
+    # The HTTP server (including use_x_forwarded_for and trusted_proxies, which Traefik in front of
+    # Home Assistant needs) is configured in the UI since Home Assistant 2026.8: Settings, System,
+    # Network, HTTP server. An http: block here is imported once on first start and then ignored.
 
     automation: !include automations.yaml
     script: !include scripts.yaml

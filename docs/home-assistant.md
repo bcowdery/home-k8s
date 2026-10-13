@@ -18,18 +18,19 @@ Everything is in the Argo CD project `home`, namespace `home-assistant`.
 Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the pod network. Two consequences, both handled in the manifests:
 
 - `dnsPolicy: ClusterFirstWithHostNet`, otherwise a host-network pod cannot resolve `whisper.home-assistant.svc.cluster.local`.
-- `configuration.yaml` (a ConfigMap in git) trusts the pod network (`10.1.0.0/16`) as a reverse proxy. Without `use_x_forwarded_for` and `trusted_proxies`, Home Assistant answers everything that arrives through Traefik with a 400.
+- **Reverse proxy trust is set in the UI, not in git.** Since Home Assistant 2026.8 the HTTP server is configured under Settings, System, Network, *HTTP server*; the old `http:` block in `configuration.yaml` is imported once and then ignored. Turn on *Use X-Forwarded-For* and add `10.1.0.0/16` (the pod network, where Traefik runs) as a trusted proxy, and confirm the change when it asks (it reverts after 5 minutes otherwise). Without this, everything arriving through Traefik gets a 400. The values live in `.storage/http` on the config volume.
 
 ## First-time setup (in the Home Assistant UI)
 
 1. Open `https://ha.home.pointyspoon.com` (or `http://192.168.1.4:8123` if DNS is not set up yet) and create the owner account.
-2. **Wyoming Protocol**, added twice (Settings, Devices & services, Add integration):
+2. **Settings, System, Network, HTTP server**: enable *Use X-Forwarded-For*, add trusted proxy `10.1.0.0/16`, save and **confirm**. Do this at `http://192.168.1.4:8123`, because the hostname gives a 400 until it is done.
+3. **Wyoming Protocol**, added twice (Settings, Devices & services, Add integration):
    - host `whisper.home-assistant.svc.cluster.local`, port `10300`
    - host `piper.home-assistant.svc.cluster.local`, port `10200`
-3. **Anthropic**: paste the API key. Start with *Recommended settings*, then try `claude-haiku-5-5`.
-4. **Settings, Voice assistants, Add assistant**: conversation agent = the Anthropic one, speech-to-text = faster-whisper, text-to-speech = piper, language English. Turn on *Prefer handling commands locally* so simple commands never reach Claude.
-5. **Settings, Voice assistants, Expose**: expose only the entities Claude should see or control.
-6. **Settings, System, Network**: set the internal and external URL to `https://ha.home.pointyspoon.com`. The mobile app wants a trusted HTTPS address.
+4. **Anthropic**: paste the API key. Start with *Recommended settings*, then try `claude-haiku-5-5`.
+5. **Settings, Voice assistants, Add assistant**: conversation agent = the Anthropic one, speech-to-text = faster-whisper, text-to-speech = piper, language English. Turn on *Prefer handling commands locally* so simple commands never reach Claude.
+6. **Settings, Voice assistants, Expose**: expose only the entities Claude should see or control.
+7. **Settings, System, Network**: set the internal and external URL to `https://ha.home.pointyspoon.com`. The mobile app wants a trusted HTTPS address.
 
 ## Claude notes
 
@@ -50,7 +51,9 @@ Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the po
 
 | Symptom | Likely cause |
 |:--|:--|
-| `400 Bad Request` from the hostname, fine on `:8123` | `trusted_proxies` does not include Traefik's pod address; check the ConfigMap |
+| `400 Bad Request` from the hostname, fine on `:8123` | the HTTP server settings in the UI lack *Use X-Forwarded-For* or the trusted proxy `10.1.0.0/16`, or a change was never confirmed and reverted (look for *Pending HTTP config was not confirmed* in the log) |
+| Anthropic setup says *Unexpected error* | the API answered a non-auth HTTP error (403, 429, ...) which the integration does not log; test the key with `curl https://api.anthropic.com/v1/models` to see the real status |
+| `NXDOMAIN` for `*.home.pointyspoon.com` from the LAN | AdGuard (the clients' DNS) forwards that domain to its public upstream; add a DNS rewrite `*.home.pointyspoon.com` to `192.168.1.201` |
 | Wyoming integration cannot connect | `dnsPolicy` lost `ClusterFirstWithHostNet`; test with `kubectl exec -it deploy/home-assistant -- python3` and `socket.gethostbyname` |
 | Pod stuck `ContainerCreating` on first deploy | the volume is still formatting; wait, see above |
 | Voice works but is slow | check Whisper's CPU (`kubectl top pod -n home-assistant`); `base.en` is faster, less accurate |
