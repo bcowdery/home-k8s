@@ -107,15 +107,23 @@ LoadBalancer IPs (MetalLB pool `192.168.1.201-254`, outside the DHCP range):
 
 ## Name resolution
 
-Clients use the NAS (`192.168.1.2`) as their DNS server, and it forwards to the UniFi gateway. The gateway holds the names as `static-host-mapping` entries in `config.gateway.json` on the UniFi controller (a copy sits in the repo root but is git-ignored, since it describes the network). Entries to keep:
+Clients use [AdGuard Home](https://adguard.com/adguard-home.html) on the NAS (`192.168.1.2`) as their DNS server. It answers in two ways:
 
-| Name                              | Address         |
-|:----------------------------------|:----------------|
-| `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar`, `argocd` `.home.pointyspoon.com` | `192.168.1.201` |
+| Names | How |
+|:--|:--|
+| `*.home.pointyspoon.com` | An AdGuard **DNS rewrite** to `192.168.1.201` (Traefik). A new app needs no DNS change. Without the rewrite AdGuard asks its public upstream (1.1.1.1), which answers `NXDOMAIN`. |
+| `*.lan` (`plex.lan`, `argo.lan`, `unifi.lan`, ...) | Forwarded to the UniFi gateway, which holds them as `static-host-mapping` entries in `config.gateway.json` on the UniFi controller. A copy sits in the repo root, git-ignored because it describes the network. |
+
+Gateway entries that matter here:
+
+| Name                                | Address         |
+|:------------------------------------|:----------------|
 | `argo.lan` (alias `argo`, `argocd`) | `192.168.1.202` |
-| `plex.lan` (alias `plex`)         | `192.168.1.203` |
+| `plex.lan` (alias `plex`)           | `192.168.1.203` |
 
-> **⚠️ Warning:** UniFi only applies changes to `config.gateway.json` when the gateway is re-provisioned, and recent versions removed the Force Provision button. Changing any trivial device setting (toggling the device LED works) triggers a provision. The gateway's DNS restarts for about a minute afterwards.
+> **⚠️ Warning:** UniFi only applies changes to `config.gateway.json` when the gateway is re-provisioned, and recent versions removed the Force Provision button. Changing any trivial device setting (toggling the device LED works) triggers a provision. The gateway's DNS restarts for about a minute afterwards, and **AdGuard can cache a failed lookup for a `.lan` name asked in that window**. If a `.lan` name suddenly returns `NXDOMAIN` through AdGuard but resolves with `dig @192.168.1.1 <name>`, clear AdGuard's cache (Settings, DNS settings, Cache configuration).
+
+> **💡 Note:** The gateway also carries a wildcard `address=/home.pointyspoon.com/192.168.1.201` line from before the AdGuard rewrite existed. It is redundant but harmless.
 
 # Ubiquiti Security Gateway
 

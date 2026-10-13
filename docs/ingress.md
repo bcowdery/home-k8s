@@ -5,7 +5,7 @@ Written 2026-10-12.
 ## How a request flows
 
 ```
-browser -> NAS DNS (192.168.1.2) -> gateway (192.168.1.1) answers sonarr.home.pointyspoon.com = 192.168.1.201
+browser -> AdGuard on the NAS (192.168.1.2) answers sonarr.home.pointyspoon.com = 192.168.1.201 (a DNS rewrite)
         -> MetalLB (BGP to the gateway) delivers 192.168.1.201 to the Traefik pod on kube1
         -> Traefik: LAN allowlist, wildcard certificate, route by Host header -> the app's Service
 ```
@@ -48,7 +48,7 @@ kubectl describe certificate wildcard-home -n traefik
 
 1. Give its `Service` the type `ClusterIP`.
 2. Add an `ingress.yaml` (copy one from `apps/media/sonarr/`), changing the host, Service name and port, and list it under `resources:`.
-3. Add a `static-host-mapping` entry for `<app>.home.pointyspoon.com` pointing at `192.168.1.201`, then re-provision the gateway.
+3. Nothing for DNS: the AdGuard rewrite `*.home.pointyspoon.com` already covers it.
 
 No certificate work is needed: the wildcard covers it.
 
@@ -56,7 +56,7 @@ No certificate work is needed: the wildcard covers it.
 
 | Symptom | Likely cause | Fix or workaround |
 |:--|:--|:--|
-| A hostname does not resolve | gateway not provisioned, or the NAS forwarder is down | `dig @192.168.1.1 <host>`; re-provision. A name that failed earlier can stay cached on the NAS for a few minutes. |
+| A hostname does not resolve (`NXDOMAIN`) | the AdGuard rewrite for `*.home.pointyspoon.com` is missing, or AdGuard cached a failure | `dig @192.168.1.2 <host>`; check Filters, DNS rewrites on the NAS; clear AdGuard's cache. `.lan` names come from the gateway instead (see the README). |
 | Browser certificate warning | certificate expired or renewal failed | `kubectl describe certificate wildcard-home -n traefik`; check the CNAME still resolves with `dig CNAME _acme-challenge.home.pointyspoon.com` |
 | `404` from Traefik | no route for that Host header | the Ingress is missing, or you used the bare IP |
 | `403` from Traefik | client outside `192.168.0.0/16` | expected; this is the LAN-only middleware |
