@@ -13,10 +13,11 @@ argocd/       Argo CD install values, and config/ with the projects and the Appl
 apps/
   core/       cluster plumbing, Argo CD project "core"
   media/      media apps and their storage, Argo CD project "media"
+  home/       Home Assistant and its voice services, Argo CD project "home"
 docs/         design documents and runbooks
 ```
 
-Every directory under `apps/core/` and `apps/media/` becomes an Argo CD Application of the same name, in the project named by its parent folder. To add a component, add a directory with a `kustomization.yaml`. Plain manifests list themselves under `resources:`. Helm charts use `helmCharts:` with the chart version pinned (see `apps/core/cert-manager/` for an example).
+Every directory under `apps/core/`, `apps/media/` and `apps/home/` becomes an Argo CD Application of the same name, in the project named by its parent folder. To add a component, add a directory with a `kustomization.yaml`. Plain manifests list themselves under `resources:`. Helm charts use `helmCharts:` with the chart version pinned (see `apps/core/cert-manager/` for an example).
 
 | Project | Directory                | What it is                                            | Namespace                   |
 |:--------|:-------------------------|:------------------------------------------------------|:----------------------------|
@@ -30,10 +31,12 @@ Every directory under `apps/core/` and `apps/media/` becomes an Argo CD Applicat
 | core    | `traefik`                | Ingress controller, wildcard certificate, LAN-only    | `traefik`                   |
 | media   | `media-shared`           | `media` namespace, shared NFS media volume            | `media`                     |
 | media   | `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3` | Media applications        | `media`                     |
+| home    | `home-shared`            | The `home-assistant` namespace                        | `home-assistant`            |
+| home    | `home-assistant`, `whisper`, `piper` | Home Assistant and its voice services | `home-assistant`            |
 
 ## Conventions
 
-- **Projects:** `core` is unrestricted. `media` may only deploy into the `media` namespace and may only create Namespaces and PersistentVolumes at cluster scope. Both are defined in `argocd/config/projects.yaml`.
+- **Projects:** `core` is unrestricted. `media` and `home` may each only deploy into their own namespace (`media`, `home-assistant`) and may only create Namespaces (plus PersistentVolumes for `media`) at cluster scope. Both are defined in `argocd/config/projects.yaml`.
 - **Labels:** apps written here carry `app.kubernetes.io/name` and `app.kubernetes.io/part-of` (the project name), added in each `kustomization.yaml`. They go on object metadata only, never on selectors or pod templates, so adding them restarts nothing. The older `app: <name>` label stays because Services and Deployment selectors depend on it. Helm charts keep their own labels.
 - **Annotations:** each media Service has `link.argocd.argoproj.io/external-link`, which shows up as a link in the Argo CD UI. Namespaces carry `kubernetes.io/description`.
 - **Prune:** on. Removing a manifest from git deletes it from the cluster. Namespaces and volume claims are exempt (`argocd.argoproj.io/sync-options: Prune=false`) so a mistaken delete can't take data with it, and the Applications leave their resources running if an Application itself is ever deleted.
@@ -88,6 +91,7 @@ Web UIs are served by one ingress ([Traefik](https://traefik.io/)) under `*.home
 | Mylar3   | Comic download manager   | https://mylar.home.pointyspoon.com          | parked (`replicas: 0`)                  |
 | Argo CD  | GitOps controller        | https://argocd.home.pointyspoon.com         | also https://192.168.1.202 (see below)  |
 | Plex     | Plex media server        | http://192.168.1.203:32400/web              | own IP, needed for discovery            |
+| Home Assistant | Smart home + voice assistant | https://ha.home.pointyspoon.com   | see [docs/home-assistant.md](docs/home-assistant.md) |
 
 LoadBalancer IPs (MetalLB pool `192.168.1.201-254`, outside the DHCP range):
 
