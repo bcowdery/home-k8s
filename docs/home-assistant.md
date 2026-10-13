@@ -44,12 +44,14 @@ Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the po
 
 Use the **cluster address**, not the hostname. Pods resolve names through CoreDNS, which sends anything that is not a cluster name straight to Google (`8.8.8.8`, `8.8.4.4`), so `*.home.pointyspoon.com` and the `.lan` names do not exist from inside the cluster. They only resolve for devices that ask AdGuard.
 
-| App | Host | Port | SSL |
-|:--|:--|:--|:--|
-| Sonarr | `sonarr-tcp.media.svc.cluster.local` | `8989` | off |
-| Radarr | `radarr-tcp.media.svc.cluster.local` | `7878` | off |
-| NZBGet | `nzbget-tcp.media.svc.cluster.local` | `6789` | off |
-| Plex | `plex-tcp.media.svc.cluster.local` | `32400` | off |
+| App | In Home Assistant | Why |
+|:--|:--|:--|
+| Sonarr | URL `http://sonarr.media.svc.cluster.local:8989` | the form takes a **full URL** (with `http://` and the port), not host and port |
+| Radarr | URL `http://radarr.media.svc.cluster.local:7878` | same |
+| NZBGet | host `nzbget-tcp.media.svc.cluster.local`, port `6789`, SSL off | different library, hyphens are fine |
+| Plex | `plex-tcp.media.svc.cluster.local`, port `32400` | |
+
+> **⚠️ Warning:** Sonarr and Radarr use Services called `sonarr` and `radarr`, not `sonarr-tcp` and `radarr-tcp`. Home Assistant's `aiopyarr` library (23.4.0) **cuts any hostname at the first hyphen** (`sonarr-tcp.media...` becomes a request to `sonarr-:8989/tcp.media...`), so the hyphenated Services cannot be used from it. The `-tcp` Services stay because the apps' own settings and the ingresses use them. Also, a URL typed without `http://` crashes the setup form (`port replacement is not allowed for relative URLs`).
 
 The API key comes from the app (Sonarr and Radarr: Settings, General, Security). Leave the URL base empty. Traffic stays on the node, so it needs no DNS, Traefik or certificate, and it is also how Sonarr and Radarr already reach NZBGet and Plex. Do not rename those Services.
 
