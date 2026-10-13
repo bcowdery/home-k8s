@@ -20,4 +20,4 @@ patches:
       metadata:
         name: kavita-tcp
         annotations:
-          link.argocd.argoproj.io/external-link: http://192.168.1.206:5000
+          link.argocd.argoproj.io/external-link: https://kavita.home.pointyspoon.com

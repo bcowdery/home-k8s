@@ -20,4 +20,4 @@ patches:
       metadata:
         name: sonarr-tcp
         annotations:
-          link.argocd.argoproj.io/external-link: http://192.168.1.204:8989
+          link.argocd.argoproj.io/external-link: https://sonarr.home.pointyspoon.com

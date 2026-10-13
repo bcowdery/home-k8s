@@ -20,4 +20,4 @@ patches:
       metadata:
         name: radarr-tcp
         annotations:
-          link.argocd.argoproj.io/external-link: http://192.168.1.205:7878
+          link.argocd.argoproj.io/external-link: https://radarr.home.pointyspoon.com

@@ -20,4 +20,4 @@ patches:
       metadata:
         name: nzbget-tcp
         annotations:
-          link.argocd.argoproj.io/external-link: http://192.168.1.203:6789
+          link.argocd.argoproj.io/external-link: https://nzbget.home.pointyspoon.com
