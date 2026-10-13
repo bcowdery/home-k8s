@@ -38,7 +38,7 @@ Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the po
 - **Home Assistant lags new models.** Its docs say a brand-new model can take up to two releases to be fully supported. If a model errors, fall back to *Recommended settings* and bump `home-assistant` in git.
 - **Sampling**: Haiku 5.5 rejects non-default `temperature`. If it returns a 400, put temperature back to the default. Newer models use *Thinking effort* instead of a thinking budget; keep it low for voice.
 - **Privacy**: audio stays local (Whisper and Piper). The *text* of what you say, plus the state of exposed entities, goes to Anthropic.
-- **Set a spend limit** on the API key's workspace in the Anthropic Console.
+- **Use a key created inside a dedicated workspace** (for example one named *Home Assistant*), not an unscoped key: the API rejects requests from an unscoped key unless they carry an `anthropic-workspace-id` header, which this integration does not send. The workspace is also where you set the **spend limit**.
 
 ## Operating it
 
@@ -52,7 +52,7 @@ Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the po
 | Symptom | Likely cause |
 |:--|:--|
 | `400 Bad Request` from the hostname, fine on `:8123` | the HTTP server settings in the UI lack *Use X-Forwarded-For* or the trusted proxy `10.1.0.0/16`, or a change was never confirmed and reverted (look for *Pending HTTP config was not confirmed* in the log) |
-| Anthropic setup says *Unexpected error* | the API answered a non-auth HTTP error (403, 429, ...) which the integration does not log; test the key with `curl https://api.anthropic.com/v1/models` to see the real status |
+| Anthropic setup says *Unexpected error* | the API answered a non-auth HTTP error, which the integration does not log. Test the key with `curl https://api.anthropic.com/v1/models -H "x-api-key: ..." -H "anthropic-version: 2023-06-01"` to see it. Seen on 2026-10-13: HTTP 400 *"This API key is not scoped to a workspace... must include the anthropic-workspace-id header"*. Home Assistant cannot send that header, so use a key created **inside a workspace**. |
 | `NXDOMAIN` for `*.home.pointyspoon.com` from the LAN | AdGuard (the clients' DNS) forwards that domain to its public upstream; add a DNS rewrite `*.home.pointyspoon.com` to `192.168.1.201` |
 | Wyoming integration cannot connect | `dnsPolicy` lost `ClusterFirstWithHostNet`; test with `kubectl exec -it deploy/home-assistant -- python3` and `socket.gethostbyname` |
 | Pod stuck `ContainerCreating` on first deploy | the volume is still formatting; wait, see above |
