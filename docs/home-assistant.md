@@ -40,6 +40,23 @@ Device discovery (mDNS, SSDP, DHCP) is broadcast based and does not cross the po
 - **Privacy**: audio stays local (Whisper and Piper). The *text* of what you say, plus the state of exposed entities, goes to Anthropic.
 - **Use a key created inside a dedicated workspace** (for example one named *Home Assistant*), not an unscoped key: the API rejects requests from an unscoped key unless they carry an `anthropic-workspace-id` header, which this integration does not send. The workspace is also where you set the **spend limit**.
 
+## Pointing Home Assistant at other apps
+
+Use the **cluster address**, not the hostname. Pods resolve names through CoreDNS, which sends anything that is not a cluster name straight to Google (`8.8.8.8`, `8.8.4.4`), so `*.home.pointyspoon.com` and the `.lan` names do not exist from inside the cluster. They only resolve for devices that ask AdGuard.
+
+| App | Host | Port | SSL |
+|:--|:--|:--|:--|
+| Sonarr | `sonarr-tcp.media.svc.cluster.local` | `8989` | off |
+| Radarr | `radarr-tcp.media.svc.cluster.local` | `7878` | off |
+| NZBGet | `nzbget-tcp.media.svc.cluster.local` | `6789` | off |
+| Plex | `plex-tcp.media.svc.cluster.local` | `32400` | off |
+
+The API key comes from the app (Sonarr and Radarr: Settings, General, Security). Leave the URL base empty. Traffic stays on the node, so it needs no DNS, Traefik or certificate, and it is also how Sonarr and Radarr already reach NZBGet and Plex. Do not rename those Services.
+
+**Rule of thumb:** a person or a phone uses `https://<app>.home.pointyspoon.com`; anything running in the cluster uses `<service>.<namespace>.svc.cluster.local`.
+
+> **⚠️ Warning:** The same limit applies to `.lan` names. The UniFi integration cannot use `unifi.lan` from Home Assistant; use `192.168.1.2` (port 8443). To make pods resolve `.lan` and `*.home` names, CoreDNS would need to forward those domains to AdGuard (`192.168.1.2`). That means editing the microk8s-managed CoreDNS ConfigMap, which `microk8s disable/enable dns` can overwrite, and it would tie in-cluster DNS for those names to the NAS.
+
 ## Operating it
 
 - **Upgrade**: change the image tag in `apps/home/home-assistant/home-assistant.yaml` and push. Read the Home Assistant release notes first; the config volume has no automatic rollback.
