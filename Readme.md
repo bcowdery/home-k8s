@@ -30,7 +30,7 @@ Every directory under `apps/core/`, `apps/media/` and `apps/home/` becomes an Ar
 | core    | `synology-csi`           | Provisions iSCSI volumes on the Synology NAS          | `synology-csi`              |
 | core    | `traefik`                | Ingress controller, wildcard certificate, LAN-only    | `traefik`                   |
 | media   | `media-shared`           | `media` namespace, shared NFS media volume            | `media`                     |
-| media   | `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3` | Media applications        | `media`                     |
+| media   | `plex`, `sonarr`, `radarr`, `nzbget`, `kavita`, `mylar3`, `kapowarr` | Media applications        | `media`                     |
 | home    | `home-shared`            | The `home-assistant` namespace                        | `home-assistant`            |
 | home    | `home-assistant`, `whisper`, `piper` | Home Assistant and its voice services | `home-assistant`            |
 
@@ -89,6 +89,7 @@ Web UIs are served by one ingress ([Traefik](https://traefik.io/)) under `*.home
 | NZBGet   | NZB download service     | https://nzbget.home.pointyspoon.com         |                                         |
 | Kavita   | Comics and ebook library | https://kavita.home.pointyspoon.com         |                                         |
 | Mylar3   | Comic download manager   | https://mylar.home.pointyspoon.com          | parked (`replicas: 0`)                  |
+| Kapowarr | Comic download manager and importer | https://kapowarr.home.pointyspoon.com |                                |
 | Argo CD  | GitOps controller        | https://argocd.home.pointyspoon.com         | also https://192.168.1.202 (see below)  |
 | Plex     | Plex media server        | http://192.168.1.203:32400/web              | own IP, needed for discovery            |
 | Home Assistant | Smart home + voice assistant | https://ha.home.pointyspoon.com   | see [docs/home-assistant.md](docs/home-assistant.md) |
