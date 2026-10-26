@@ -10,6 +10,8 @@ browser -> AdGuard on the NAS (192.168.1.2) answers sonarr.home.pointyspoon.com 
         -> Traefik: LAN allowlist, wildcard certificate, route by Host header -> the app's Service
 ```
 
+Public hostnames (only `books.pointyspoon.com` today) take a different path, see [Public hostnames](#public-hostnames).
+
 Plex (`192.168.1.203`) and Argo CD (`192.168.1.202`) also have their own addresses and bypass Traefik.
 
 ## The parts
@@ -17,7 +19,8 @@ Plex (`192.168.1.203`) and Argo CD (`192.168.1.202`) also have their own address
 | Part | Where | Notes |
 |:--|:--|:--|
 | Traefik | `apps/core/traefik/` | One pod. CRDs come from the separate `traefik-crds` chart, because the main chart also installs 15 Traefik Hub CRDs. `externalTrafficPolicy: Local` keeps client source addresses so the allowlist works. |
-| LAN-only | `apps/core/traefik/middleware.yaml` | `ipAllowList` for `192.168.0.0/16` on the websecure entrypoint. Nothing is port-forwarded to Traefik, so this is the second lock. |
+| LAN-only | `apps/core/traefik/middleware.yaml` | `ipAllowList` for `192.168.0.0/16` on the websecure entrypoint. The gateway forwards WAN 443 only to the `public` entrypoint, never to websecure, so this is the second lock. |
+| Public entrypoint | `apps/core/traefik/kustomization.yaml` | `public` on `192.168.1.201:9443`, no allowlist. Only routes that name it are attached; `web` and `websecure` are `asDefault`, so a route that names no entrypoint never lands on it. |
 | Certificate | `apps/core/traefik/certificate.yaml` | `*.home.pointyspoon.com`, issued by `letsencrypt-prod`, set as Traefik's default certificate (`tlsStore`). A wildcard keeps individual hostnames out of the public certificate-transparency logs. |
 | Issuers | `apps/core/cert-manager/clusterissuers.yaml` | `letsencrypt-staging` and `letsencrypt-prod`. Use staging while experimenting: production has strict rate limits. |
 | Ingresses | `apps/media/<app>/ingress.yaml` | One per app, `ingressClassName: traefik`, websecure only. |
@@ -44,6 +47,28 @@ kubectl get certificate -n traefik
 kubectl describe certificate wildcard-home -n traefik
 ```
 
+## Public hostnames
+
+```
+internet -> books.pointyspoon.com (A record at Hover) = WAN address
+         -> UniFi port forward WAN 443 -> 192.168.1.201:9443
+         -> Traefik public entrypoint (no allowlist), certificate books-tls by SNI -> Kavita
+```
+
+| Part | Where | Notes |
+|:--|:--|:--|
+| Ingress | `apps/media/kavita/ingress-public.yaml` | Entrypoints `websecure,public`. A separate Ingress so `kavita.home.pointyspoon.com` stays off the public entrypoint. |
+| Certificate | `apps/core/traefik/certificate-books.yaml` | Lives in `traefik` and is listed in the `TLSStore`, so Traefik serves it by SNI. |
+| Challenge | Hover, plus `clusterissuers.yaml` and the `acme-dns` Secret | `_acme-challenge.books.pointyspoon.com` CNAMEs to the same acme-dns account as `home`. The Secret's `acmedns.json` has a `books.pointyspoon.com` key with a copy of that account. |
+| Port forward | UniFi controller | WAN TCP 443 to `192.168.1.201:9443`. Port 80 stays closed. |
+| LAN DNS | AdGuard | Rewrite `books.pointyspoon.com` to `192.168.1.201`, so LAN clients go through websecure and do not depend on hairpin NAT. |
+
+> **🔒 Security:** Anything on the public entrypoint is on the internet, guarded only by the app's own login. Keep Kavita updated, give every account a strong password, and do not attach admin tools (the *arr apps, NZBGet, Argo CD) to `public`.
+
+> **⚠️ Warning:** The A record at Hover is static. If the ISP changes the WAN address, `books.pointyspoon.com` breaks until the record is updated.
+
+To publish another app, repeat the same steps: a CNAME and a key in `acmedns.json` for its challenge, a `dnsNames` selector in both ClusterIssuers, a Certificate in `traefik` added to `tlsStore.default.certificates`, an Ingress with `router.entrypoints: websecure,public`, an A record and an AdGuard rewrite.
+
 ## Adding an app
 
 1. Give its `Service` the type `ClusterIP`.
@@ -60,6 +85,7 @@ No certificate work is needed: the wildcard covers it.
 | Browser certificate warning | certificate expired or renewal failed | `kubectl describe certificate wildcard-home -n traefik`; check the CNAME still resolves with `dig CNAME _acme-challenge.home.pointyspoon.com` |
 | `404` from Traefik | no route for that Host header | the Ingress is missing, or you used the bare IP |
 | `403` from Traefik | client outside `192.168.0.0/16` | expected; this is the LAN-only middleware |
+| `books.pointyspoon.com` times out from outside | port forward missing, or the WAN address changed | check the UniFi port forward and `dig +short books.pointyspoon.com` against the WAN address |
 | `503` from Traefik | the Service has no ready pods | for example Mylar3 is parked |
 | Argo CD UI via hostname gives `500` | Traefik is verifying Argo CD's internal certificate | the `ServersTransport` in `argocd/config/ingress.yaml` must say `insecureSkipVerify` |
 | Everything by name is down | Traefik pod or the gateway/NAS DNS | use `https://192.168.1.202` for Argo CD, `http://192.168.1.203:32400/web` for Plex, or `kubectl port-forward` for anything |

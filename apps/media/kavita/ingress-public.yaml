@@ -1,0 +1,23 @@
+# Kavita on the internet at books.pointyspoon.com. A separate Ingress so only this hostname is
+# attached to the public entrypoint; kavita.home.pointyspoon.com stays LAN-only.
+# On the LAN the same name arrives through websecure (AdGuard rewrite to 192.168.1.201).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kavita-public
+  namespace: media
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,public
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: books.pointyspoon.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kavita-tcp
+                port:
+                  number: 5000

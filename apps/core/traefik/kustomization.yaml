@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - middleware.yaml
   - certificate.yaml
+  - certificate-books.yaml
 helmCharts:
   # The main chart bundles 25 CRDs, 15 of them for Traefik Hub (a commercial product). The separate
   # CRD chart ships only the 10 traefik.io ones (hub, Gateway API and knative are off by default).
@@ -25,7 +26,9 @@ helmCharts:
         isDefaultClass: true
         name: traefik
       ports:
+        # routes that name no entrypoint attach to the default ones only, never to public
         web:
+          asDefault: true
           http:
             redirections:
               entryPoint:
@@ -33,14 +36,29 @@ helmCharts:
                 scheme: https
                 permanent: true
         websecure:
+          asDefault: true
           http:
             middlewares:
               - traefik-lan-only@kubernetescrd
+        # the only entrypoint without the LAN allowlist. The gateway forwards WAN 443 here, and only
+        # routes that name it explicitly (router.entrypoints: public) are reachable from outside
+        public:
+          port: 9443
+          exposedPort: 9443
+          expose:
+            default: true
+          protocol: TCP
+          http:
+            tls:
+              enabled: true
       # serve the wildcard certificate for every host that has no certificate of its own
       tlsStore:
         default:
           defaultCertificate:
             secretName: wildcard-home-tls
+          # served by SNI for the public hostnames outside home.pointyspoon.com
+          certificates:
+            - secretName: books-tls
       service:
         annotations:
           metallb.io/loadBalancerIPs: 192.168.1.201

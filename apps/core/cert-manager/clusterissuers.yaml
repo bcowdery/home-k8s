@@ -1,6 +1,7 @@
 # Let's Encrypt via DNS-01 and acme-dns. Names are internal-only, so HTTP-01 is not an option.
-# Hover (the DNS host) has no API. Instead, one CNAME there
-#   _acme-challenge.home.pointyspoon.com  ->  <uuid>.auth.acme-dns.io
+# Hover (the DNS host) has no API. Instead, one CNAME there per name
+#   _acme-challenge.home.pointyspoon.com   ->  <uuid>.auth.acme-dns.io
+#   _acme-challenge.books.pointyspoon.com  ->  <uuid>.auth.acme-dns.io   (same account)
 # lets cert-manager answer challenges through the acme-dns account in the sealed Secret.
 # Always try staging first: production has strict rate limits.
 apiVersion: cert-manager.io/v1
@@ -24,6 +25,17 @@ spec:
             accountSecretRef:
               name: acme-dns
               key: acmedns.json
+      # public names outside home.pointyspoon.com, each with its own CNAME at Hover pointing at the
+      # same acme-dns account (and its own key in acmedns.json)
+      - selector:
+          dnsNames:
+            - books.pointyspoon.com
+        dns01:
+          acmeDNS:
+            host: https://auth.acme-dns.io
+            accountSecretRef:
+              name: acme-dns
+              key: acmedns.json
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -40,6 +52,17 @@ spec:
       - selector:
           dnsZones:
             - home.pointyspoon.com
+        dns01:
+          acmeDNS:
+            host: https://auth.acme-dns.io
+            accountSecretRef:
+              name: acme-dns
+              key: acmedns.json
+      # public names outside home.pointyspoon.com, each with its own CNAME at Hover pointing at the
+      # same acme-dns account (and its own key in acmedns.json)
+      - selector:
+          dnsNames:
+            - books.pointyspoon.com
         dns01:
           acmeDNS:
             host: https://auth.acme-dns.io

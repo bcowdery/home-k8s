@@ -4,6 +4,7 @@ resources:
   - kavita.yaml
   - pvc.yaml
   - ingress.yaml
+  - ingress-public.yaml
 # metadata only: labels are not added to selectors or pod templates, so nothing restarts
 labels:
   - pairs:

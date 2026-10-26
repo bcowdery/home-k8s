@@ -80,14 +80,14 @@ Then follow [bootstrap/Readme.md](bootstrap/Readme.md).
 
 # Services and addresses
 
-Web UIs are served by one ingress ([Traefik](https://traefik.io/)) under `*.home.pointyspoon.com` with a Let's Encrypt wildcard certificate. They are reachable from the home network only. See [docs/ingress.md](docs/ingress.md) for how it works and what to do when it breaks.
+Web UIs are served by one ingress ([Traefik](https://traefik.io/)) under `*.home.pointyspoon.com` with a Let's Encrypt wildcard certificate. They are reachable from the home network only, except `books.pointyspoon.com` (Kavita), which is public. See [docs/ingress.md](docs/ingress.md) for how it works and what to do when it breaks.
 
 | Service  | Description              | URL                                         | Notes                                   |
 |:---------|:-------------------------|:--------------------------------------------|:----------------------------------------|
 | Sonarr   | TV show download manager | https://sonarr.home.pointyspoon.com         |                                         |
 | Radarr   | Movie download manager   | https://radarr.home.pointyspoon.com         |                                         |
 | NZBGet   | NZB download service     | https://nzbget.home.pointyspoon.com         |                                         |
-| Kavita   | Comics and ebook library | https://kavita.home.pointyspoon.com         |                                         |
+| Kavita   | Comics and ebook library | https://kavita.home.pointyspoon.com         | public at https://books.pointyspoon.com |
 | Mylar3   | Comic download manager   | https://mylar.home.pointyspoon.com          | parked (`replicas: 0`)                  |
 | Kapowarr | Comic download manager and importer | https://kapowarr.home.pointyspoon.com |                                |
 | Argo CD  | GitOps controller        | https://argocd.home.pointyspoon.com         | also https://192.168.1.202 (see below)  |
@@ -98,7 +98,7 @@ LoadBalancer IPs (MetalLB pool `192.168.1.201-254`, outside the DHCP range):
 
 | IP              | What                                                                                  |
 |:----------------|:--------------------------------------------------------------------------------------|
-| `192.168.1.201` | Traefik, the ingress for every hostname above                                         |
+| `192.168.1.201` | Traefik, the ingress for every hostname above. Port 9443 is the public entrypoint, WAN 443 forwards to it |
 | `192.168.1.202` | Argo CD directly. Kept as a path that does not depend on Traefik, DNS or the certificate |
 | `192.168.1.203` | Plex. Plex's discovery (GDM, DLNA, mDNS) wants its own address                        |
 

@@ -1,0 +1,19 @@
+# Certificate for the public Kavita hostname, which the *.home wildcard does not cover. Lives here
+# rather than in media so Traefik can serve it from its TLSStore (see kustomization.yaml), the same
+# way as the wildcard. Its challenge name has its own CNAME at Hover (see clusterissuers.yaml).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: books
+  namespace: traefik
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretName: books-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - books.pointyspoon.com
+  privateKey:
+    rotationPolicy: Always
