@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metakavita-config
+  namespace: media
+  labels:
+    app: metakavita
+data:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: "America/Halifax"
+  # Traefik sits in front, so trust one X-Forwarded-For hop
+  TRUSTED_PROXY_COUNT: "1"
+  # in-cluster API address; the setup wizard still asks for the Kavita API key
+  KAVITA_URL: "http://kavita-tcp.media.svc.cluster.local:5000"
+  # used for links back to Kavita in the UI
+  KAVITA_EXTERNAL_URL: "https://kavita.home.pointyspoon.com"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metakavita-deployment
+  namespace: media
+spec:
+  # upstream runs a single gunicorn/eventlet worker against a local data dir; one replica only
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: metakavita
+  template:
+    metadata:
+      labels:
+        app: metakavita
+      namespace: media
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: metakavita
+          image: ghcr.io/raukorim-bot/metakavita:1.7.2
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1000m
+              ephemeral-storage: 2Gi
+          envFrom:
+            - configMapRef:
+                name: metakavita-config
+          ports:
+            - name: http-web
+              protocol: TCP
+              containerPort: 5010
+          # /healthz is unauthenticated and answers 200 before and after the setup wizard
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http-web
+            failureThreshold: 30    # 10s x 30 = 5min
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http-web
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-web
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            # config.json (Kavita API key, account) and the rest of the app state
+            - mountPath: "/app/data"
+              name: metakavita-data
+      volumes:
+        - name: metakavita-data
+          persistentVolumeClaim:
+            claimName: metakavita-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metakavita-tcp
+  namespace: media
+  labels:
+    app: metakavita
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http-web
+    - name: http-web
+      protocol: TCP
+      port: 5010
+      targetPort: http-web
+  selector:
+    app: metakavita

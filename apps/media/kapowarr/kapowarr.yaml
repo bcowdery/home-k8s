@@ -32,7 +32,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: kapowarr
-          image: mrcas/kapowarr:latest
+          image: mrcas/kapowarr:v1.3.2
           resources:
             requests:
               memory: 256Mi

@@ -1,0 +1,22 @@
+# LAN-only on purpose: upstream calls MetaKavita a LAN/VPN tool, and it holds a Kavita admin
+# API key and can load community scrapers (arbitrary Python). Never add the public entrypoint.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: metakavita
+  namespace: media
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: metakavita.home.pointyspoon.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: metakavita-tcp
+                port:
+                  number: 5010
