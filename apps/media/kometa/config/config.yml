@@ -1,0 +1,55 @@
+# Kometa config. <<NAME>> placeholders are filled from the KOMETA_* variables in the
+# kometa-secrets Secret (KOMETA_OMDB_KEY fills <<OMDB_KEY>>, and so on).
+libraries:
+  Movies:
+    collection_files:
+      - default: universe
+      - default: franchise
+      # the `kids` label that the managed account filters on
+      - file: /config/kids.yml
+    operations: &operations
+      mass_content_rating_update: omdb
+      mass_genre_update: tmdb
+      # writes Category:Level labels (e.g. Frightening:Moderate) for Moderate and Severe only
+      mass_imdb_parental_labels: moderate
+  TV Shows:
+    collection_files:
+      - default: universe
+      - default: franchise
+      - file: /config/kids.yml
+    operations: *operations
+
+settings:
+  # operations fill in ratings and parental labels before kids.yml reads them
+  run_order:
+    - operations
+    - metadata
+    - collections
+    - overlays
+  # the cache keeps lookups between runs; without it every run spends the OMDb quota again
+  cache: true
+  cache_expiration: 60
+  asset_directory: []
+  show_unmanaged: false
+  show_unconfigured: false
+  show_missing: false
+  save_report: false
+
+plex:
+  # in-cluster Service, which keeps Kometa off Traefik and the LAN allowlist
+  url: http://plex-tcp.media.svc.cluster.local:32400
+  token: <<PLEX_TOKEN>>
+  timeout: 120
+  db_cache:
+  clean_bundles: false
+  empty_trash: false
+  optimize: false
+
+tmdb:
+  apikey: <<TMDB_KEY>>
+  language: en
+  region: US
+
+omdb:
+  apikey: <<OMDB_KEY>>
+  cache_expiration: 60

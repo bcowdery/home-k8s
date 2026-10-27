@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - kometa.yaml
+  - pvc.yaml
+  # Plex token, TMDb key and OMDb key. See Readme.md for how it is sealed.
+  - secrets-sealed.yaml
+# metadata only: labels are not added to selectors or pod templates, so nothing restarts
+labels:
+  - pairs:
+      app.kubernetes.io/name: kometa
+      app.kubernetes.io/part-of: media
+configMapGenerator:
+  - name: kometa-config
+    namespace: media
+    files:
+      - config/config.yml
+      - config/kids.yml
+    options:
+      # the CronJob reads the ConfigMap fresh on every run, so no hash suffix is needed
+      disableNameSuffixHash: true

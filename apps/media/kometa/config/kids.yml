@@ -1,0 +1,37 @@
+# Applies the `kids` label that the managed account for ages 6 and under is restricted to.
+#
+# This uses `filters` and not `plex_search` on purpose. plex_search drops values that are not yet
+# in the library, so on a library with no G/TV-Y/TV-G items the rating condition would vanish and
+# everything without a veto label would be labelled. With filters an unknown value never matches,
+# so the rule fails closed.
+#
+# Each list item under `filters` is one rule; an item that passes any rule is labelled. Within a
+# rule every attribute must pass. `label.not` fails if the item has any of the listed labels.
+collections:
+  Kids Label:
+    build_collection: false
+    plex_all: true
+    filters:
+      # US ratings Plex's own Younger Kid profile allows, minus anything IMDb's parental guide
+      # rates Moderate or Severe in any category
+      - validate: false
+        content_rating: G, TV-Y, TV-G
+        label.not:
+          - kids-block
+          - Nudity:Moderate
+          - Nudity:Severe
+          - Violence:Moderate
+          - Violence:Severe
+          - Profanity:Moderate
+          - Profanity:Severe
+          - Alcohol:Moderate
+          - Alcohol:Severe
+          - Frightening:Moderate
+          - Frightening:Severe
+      # manual override, set by hand in Plex, for titles whose rating or parental guide is wrong
+      - validate: false
+        label: kids-allow
+        label.not: kids-block
+    item_label: kids
+    # takes `kids` off anything that stops matching
+    non_item_remove_label: kids

@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kometa
+  namespace: media
+  labels:
+    app: kometa
+spec:
+  schedule: "0 3 * * *"
+  timeZone: America/Halifax
+  # a slow run must never overlap the next one; both would write the same labels
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # a failed run is retried by the next night's schedule, not in a loop
+      backoffLimit: 0
+      activeDeadlineSeconds: 21600    # 6h
+      template:
+        metadata:
+          labels:
+            app: kometa
+        spec:
+          restartPolicy: Never
+          initContainers:
+            # Kometa rewrites config.yml in place, so it cannot read it from a read-only ConfigMap.
+            # Copy the files from git onto the volume on every run; git always wins.
+            - name: copy-config
+              image: busybox:1.37
+              command: ["sh", "-c", "cp /config-src/config.yml /config-src/kids.yml /config/"]
+              volumeMounts:
+                - mountPath: /config-src
+                  name: kometa-config
+                - mountPath: /config
+                  name: kometa-data
+          containers:
+            - name: kometa
+              image: kometateam/kometa:v2.5.3
+              args: ["--run"]
+              env:
+                - name: TZ
+                  value: America/Halifax
+              # KOMETA_PLEX_TOKEN, KOMETA_TMDB_KEY and KOMETA_OMDB_KEY fill the <<...>> placeholders
+              envFrom:
+                - secretRef:
+                    name: kometa-secrets
+              resources:
+                requests:
+                  memory: 256Mi
+                  cpu: 100m
+                limits:
+                  memory: 2Gi
+                  cpu: 1000m
+              volumeMounts:
+                # config, the lookup cache and logs
+                - mountPath: /config
+                  name: kometa-data
+          volumes:
+            - name: kometa-config
+              configMap:
+                name: kometa-config
+            - name: kometa-data
+              persistentVolumeClaim:
+                claimName: kometa-data
