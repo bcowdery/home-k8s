@@ -41,7 +41,7 @@ spec:
               env:
                 - name: TZ
                   value: America/Halifax
-              # KOMETA_MYPLEX_TOKEN, KOMETA_TMDB_KEY and KOMETA_OMDB_KEY fill the <<...>> placeholders
+              # KOMETA_MYPLEX_TOKEN, KOMETA_TMDB_KEY, KOMETA_OMDB_KEY and KOMETA_MDBLIST_KEY fill the <<...>> placeholders
               envFrom:
                 - secretRef:
                     name: kometa-secrets

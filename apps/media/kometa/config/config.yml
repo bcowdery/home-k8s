@@ -53,3 +53,8 @@ tmdb:
 omdb:
   apikey: <<OMDB_KEY>>
   cache_expiration: 60
+
+# the universe default collections are built from MDBList lists
+mdblist:
+  apikey: <<MDBLIST_KEY>>
+  cache_expiration: 60

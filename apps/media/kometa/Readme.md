@@ -30,13 +30,14 @@ The managed account uses restriction profile **None**, with Movies and TV Shows 
 
 ## Secrets
 
-`secrets-sealed.yaml` holds `KOMETA_MYPLEX_TOKEN`, `KOMETA_TMDB_KEY` and `KOMETA_OMDB_KEY`. Kometa substitutes them into the `<<MYPLEX_TOKEN>>`, `<<TMDB_KEY>>` and `<<OMDB_KEY>>` placeholders in `config/config.yml`. To change one, reseal all three. The token is deliberately not named `KOMETA_PLEX_TOKEN`: Kometa reserves that name and does not substitute it into the config.
+`secrets-sealed.yaml` holds `KOMETA_MYPLEX_TOKEN`, `KOMETA_TMDB_KEY`, `KOMETA_OMDB_KEY` and `KOMETA_MDBLIST_KEY`. Kometa substitutes them into the matching `<<MYPLEX_TOKEN>>`, `<<TMDB_KEY>>`, `<<OMDB_KEY>>` and `<<MDBLIST_KEY>>` placeholders in `config/config.yml`. To change one, reseal all four. The token is deliberately not named `KOMETA_PLEX_TOKEN`: Kometa reserves that name and does not substitute it into the config.
 
 ```
 kubectl -n media create secret generic kometa-secrets --dry-run=client -o yaml \
   --from-literal=KOMETA_MYPLEX_TOKEN=... \
   --from-literal=KOMETA_TMDB_KEY=... \
   --from-literal=KOMETA_OMDB_KEY=... \
+  --from-literal=KOMETA_MDBLIST_KEY=... \
 | kubeseal --controller-namespace kube-system --controller-name sealed-secrets-controller --format yaml \
   > apps/media/kometa/secrets-sealed.yaml
 ```

@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - kometa.yaml
   - pvc.yaml
-  # Plex token, TMDb key and OMDb key. See Readme.md for how it is sealed.
+  # Plex token and the TMDb, OMDb and MDBList keys. See Readme.md for how it is sealed.
   - secrets-sealed.yaml
 # metadata only: labels are not added to selectors or pod templates, so nothing restarts
 labels:
