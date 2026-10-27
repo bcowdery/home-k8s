@@ -154,6 +154,13 @@ USG gateway config to enable BGP:
 }
 ```
 
+# Handy Kube Commands
+
+**Kick off a Kometa run**
+```sh
+kubectl -n media create job --from=cronjob/kometa kometa-manual-$(date +%s)
+```
+
 # Removing
 
 Remove microk8s and everything in it:
