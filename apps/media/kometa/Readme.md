@@ -20,7 +20,7 @@ Two labels can be set by hand in Plex to override the rule:
 | `kids-allow` | Gets `kids` whatever its rating or parental labels. For titles rated `Approved`, `Not Rated` or wrongly. |
 | `kids-block` | Never gets `kids`. Wins over `kids-allow`. |
 
-Overrides take effect on the next run.
+Overrides take effect on the next run. Case does not matter: Plex capitalises labels on save (`kids-allow` becomes `Kids-allow`), and `config/kids.yml` is written to cope with that.
 
 > **📌 Important:** A title with no IMDb parental guide has no severity labels, so it passes on its rating alone. Titles with no rating never get `kids`.
 

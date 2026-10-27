@@ -1,23 +1,36 @@
-# Applies the `kids` label that the managed account for ages 6 and under is restricted to.
+# Applies the `Kids` label that the managed account for ages 6 and under is restricted to.
 #
-# This uses `filters` and not `plex_search` on purpose. plex_search drops values that are not yet
-# in the library, so on a library with no G/TV-Y/TV-G items the rating condition would vanish and
-# everything without a veto label would be labelled. With filters an unknown value never matches,
-# so the rule fails closed.
+# Plex capitalises labels: one typed as `kids-allow` is returned on the item as `Kids-allow`, but
+# the library's label list (which Kometa validates filter values against) keeps `kids-allow`.
+# Kometa compares label text case-sensitively, while Plex's own search matches by tag and ignores
+# case. Every label comparison below is written so that case cannot matter:
 #
-# Each list item under `filters` is one rule; an item that passes any rule is labelled. Within a
-# rule every attribute must pass. `label.not` fails if the item has any of the listed labels.
+# - `kids-block` is excluded by the plex_search builder, which Plex evaluates by tag.
+# - `kids-allow` is matched with a case-insensitive regex.
+# - Kometa's own label is written as `Kids`, the form Plex returns, so that adding it and
+#   `non_item_remove_label` compare equal. With `kids` it never removed anything.
+#
+# The rating rule uses `filters` and not plex_search on purpose. plex_search drops values that are
+# not yet in the library, so on a library with no G/TV-Y/TV-G items the rating condition would
+# vanish and everything without a veto label would be labelled. With filters an unknown value
+# never matches, so the rule fails closed.
 collections:
   Kids Label:
     build_collection: false
-    plex_all: true
+    plex_search:
+      all:
+        label.not: kids-block
+        # always true. Keeps the search valid if no item carries kids-block, because plex_search
+        # drops a label value that does not exist and fails when no condition is left.
+        title.not: "kometa-no-such-title"
+    # Each list item is one rule; an item that passes any rule is labelled. Within a rule every
+    # attribute must pass. `label.not` fails if the item has any of the listed labels.
     filters:
       # US ratings Plex's own Younger Kid profile allows, minus anything IMDb's parental guide
-      # rates Moderate or Severe in any category
+      # rates Moderate or Severe in any category. Kometa writes these labels itself, in this case.
       - validate: false
         content_rating: G, TV-Y, TV-G
         label.not:
-          - kids-block
           - Nudity:Moderate
           - Nudity:Severe
           - Violence:Moderate
@@ -30,8 +43,7 @@ collections:
           - Frightening:Severe
       # manual override, set by hand in Plex, for titles whose rating or parental guide is wrong
       - validate: false
-        label: kids-allow
-        label.not: kids-block
-    item_label: kids
-    # takes `kids` off anything that stops matching
-    non_item_remove_label: kids
+        label.regex: "(?i)^kids-allow$"
+    item_label: Kids
+    # takes `Kids` off anything that stops matching
+    non_item_remove_label: Kids
