@@ -62,17 +62,22 @@ spec:
               port: http-web
             failureThreshold: 30    # 10s x 30 = 5min
             periodSeconds: 10
+          # the single eventlet worker stalls /healthz for 8s+ while scraping; the 1s default
+          # timeout dropped the pod from the Service and Traefik answered "no available server"
           readinessProbe:
             httpGet:
               path: /healthz
               port: http-web
             periodSeconds: 10
+            timeoutSeconds: 15
+            failureThreshold: 6     # 10s x 6 = 1min of stalls before leaving the Service
           livenessProbe:
             httpGet:
               path: /healthz
               port: http-web
             periodSeconds: 30
-            timeoutSeconds: 5
+            timeoutSeconds: 15
+            failureThreshold: 5     # 30s x 5 = 2.5min before a restart
           volumeMounts:
             # config.json (Kavita API key, account) and the rest of the app state
             - mountPath: "/app/data"
