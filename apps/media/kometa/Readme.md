@@ -42,7 +42,13 @@ kubectl -n media create secret generic kometa-secrets --dry-run=client -o yaml \
   > apps/media/kometa/secrets-sealed.yaml
 ```
 
-> **🧠 Pro-tip:** The Plex token is `PlexOnlineToken` in `/config/Library/Application Support/Plex Media Server/Preferences.xml` inside the Plex pod.
+> **💥 DANGER:** Never give Kometa the server's `PlexOnlineToken` from `Preferences.xml`, or any token that belongs to another device. Kometa signs in to plex.tv with `X-Plex-Provides: sync`, and plex.tv rewrites the record of whichever device owns the token. With the server's token that turned the server into a `sync` device after every run, and it vanished from Plex Web until Plex was restarted.
+
+The token must belong to Kometa's own client identifier, which Kometa keeps in `/config/UUID` on the `kometa-data` volume. Create one with a PIN login under that identifier:
+
+1. `POST https://plex.tv/api/v2/pins?strong=true` with headers `X-Plex-Client-Identifier: <UUID>` and `X-Plex-Product: Kometa`. Note the `id` and `code` in the reply.
+2. Open `https://app.plex.tv/auth#?clientID=<UUID>&code=<code>` and approve it as the Plex admin account.
+3. `GET https://plex.tv/api/v2/pins/<id>?code=<code>` with the same client identifier header. `authToken` is the token. It appears under the account's authorized devices as Kometa.
 
 ## Running it
 
