@@ -38,7 +38,7 @@ settings:
 plex:
   # in-cluster Service, which keeps Kometa off Traefik and the LAN allowlist
   url: http://plex-tcp.media.svc.cluster.local:32400
-  token: <<PLEX_TOKEN>>
+  token: <<MYPLEX_TOKEN>>
   timeout: 120
   db_cache:
   clean_bundles: false
